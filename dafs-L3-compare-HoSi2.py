@@ -74,8 +74,9 @@ for R in Reflections:
     for simfile in Models:
         key = "_".join([Models[simfile], R])
         useabs = R=="sat"
+        Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
         try:
-            data = io.FDMNES.loadDAFS(simfile, Reflections[R], 
+            data = io.FDMNES.loadDAFS(simfile, Ref, 
                                       absorption=useabs)
         except ValueError: #not found in this model?
             print("Reflection %s not found in file %s"%(R, simfile))
