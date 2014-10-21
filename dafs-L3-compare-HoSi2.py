@@ -11,7 +11,7 @@ import pylab as pl
 import collections
 from matplotlib.ticker import MultipleLocator
 from itertools import product
-from kara_tools import TUBAF
+from kara_tools import TUBAF, io
 import matplotlib
 import os
 import evaluationtools as et
@@ -31,6 +31,7 @@ def sim_cut(key, edge, cut, dE, shift):
 
 edge = 8071
 cut = 45
+<<<<<<< HEAD
 
 reflections = ("301", "sat", "110", "001")
 models      = ("mod", "D1", "A", "HS")
@@ -97,14 +98,73 @@ for key, Ref in product(data, reflections):
     dafs[new_key] /= dafs[new_key].mean()
  
 """ 
+=======
+
+myvars = ["m", "n", "c", "dE"]
+models      = ("mod", "D1", "A", "HS")
+algs        = ("FDM", "Green")
+  
+fit_para, fit, exp_norm = {}, {}, {}
+
+# load data
+
+
+Reflections = {"301":"608", 
+               "sat":"-215", 
+               "110":"220", 
+               "001":"008"}
+
+
+Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
+            'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
+            'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
+            'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
+            'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
+            'MN-v11_conv.txt'                : 'D1_FDM', 
+            'MN-v16_conv.txt'                : 'D1_FDM', 
+            'modulated-L23-conv_out_conv.txt': 'mod_Green'}
+
+Exp = {}
+Energy = {}
+Sim = {}
+Abs = {}
+
+print("loading data...")
+flist = os.listdir(os.curdir)
+for R in Reflections:
+    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
+    assert len(fname)==1
+    fname = fname[0]
+    Exp[R] = et.loaddat(fname, todict=True, comment="")
+    for simfile in Models:
+        key = "_".join([Models[simfile], R])
+        useabs = R=="sat"
+        try:
+            data = io.FDMNES.loadDAFS(simfile, Reflections[R], absorption=useabs)
+        except ValueError:
+            continue
+        if useabs:
+            Abs[key] = data[2]
+        Sim[key] = data[1] / data[1].mean()
+        Energy[key] = data[0] + edge
+
+
+"""  
+ 
+>>>>>>> 1bdc7ba814d585c3e78a4fe3c56ecc64bcd4e5c5
 en_exp, Exp = {}, {}
 for key in exp:
     # en_exp[key] = exp[key][:,0]
     # dummy_dafs = exp[key][:,-3] / exp[key][:,-3].mean()
     # Exp[key] = interp1d(en_exp[key], dummy_dafs, kind='linear')
     
+<<<<<<< HEAD
     en_exp[key] = exp_data[key]
   
+=======
+    en_exp[key] = 
+ 
+>>>>>>> 1bdc7ba814d585c3e78a4fe3c56ecc64bcd4e5c5
 # fit
 Abs = {}
 print("fitting...")
