@@ -31,6 +31,74 @@ def sim_cut(key, edge, cut, dE, shift):
 
 edge = 8071
 cut = 45
+<<<<<<< HEAD
+
+reflections = ("301", "sat", "110", "001")
+models      = ("mod", "D1", "A", "HS")
+algs        = ("FDM", "Green")
+  
+# Cols = collections.namedtuple("Col", "ss sp")
+# cols = dict({"301" : Cols(26,32),
+             # # "sat" : Cols(16,23), # only for D1_FDM_sat
+             # "sat" : Cols(38,44), # I statt Ic, Abs = 44
+             # "110" : Cols(5,11),
+             # "001" : Cols(17,23)})
+
+fit_para, fit, exp_norm = {}, {}, {}
+
+# load data
+print("loading data...")
+all_files = os.listdir(os.curdir)
+
+exp_data = {}
+for key in reflections:
+    fname = filter(lambda file: key in file and "corr" in file, all_files)[0]
+    dummy = et.loaddat(fname)
+    exp_data[key] = dict(zip(dummy[1].split(), dummy[0]))
+
+
+name_dict = dict({"mod_Green"  : "modulated-L23-conv_out_conv.txt",
+                  "D1_Green"   : "D1-L23-Green-conv_out_conv.txt",
+                  "D1_FDM_sat" : "MN-v16_conv.txt",
+                  "D1_FDM"     : "MN-v11_conv.txt",
+                  "A_Green"    : "A-L23-Green-conv_out_conv.txt",
+                  "A_FDM"      : "A-L23-new-all-conv_out_conv.txt",
+                  "HS_Green"   : "HoSi2-Green-conv_out_conv.txt",
+                  "HS_FDM"     : "HoSi2-conv_out_conv.txt"})
+data = {}
+for key in name_dict:
+    dummy = et.loaddat(name_dict[key])
+    data[key] = dict(zip(dummy[1].split(), dummy[0]))
+
+myvars = ["m", "n", "c", "dE"]
+ 
+# energy/intensity; pre-norming by mean
+energy, dafs, Abs = {}, {}, {}
+for key, Ref in product(data, reflections):
+    if len(key.split('_')) == 2:
+        new_key = key + '_' + Ref
+    else:
+        new_key = key
+        Ref = key.split('_')[2]
+    
+    energy[new_key] = data[key]["Energy"] + edge
+    
+    I_ss  = "I(" + Ref + ")ss_0"
+    I_sp  = "I(" + Ref + ")sp_0"
+    Ic_ss = "Ic(" + Ref + ")ss_0"
+    Ic_sp = "Ic(" + Ref + ")sp_0"
+    A     = "A(" + Ref + ")in_0"
+    
+    if Ref == "sat":
+        dafs[new_key] = data[key][I_ss] + data[key][I_sp]
+        Abs[new_key]  = data[key][A]
+    else:
+        dafs[new_key] = data[key][Ic_ss] + data[key][Ic_sp]
+        Abs[new_key] = 1.
+    dafs[new_key] /= dafs[new_key].mean()
+ 
+""" 
+=======
 
 myvars = ["m", "n", "c", "dE"]
 models      = ("mod", "D1", "A", "HS")
@@ -87,7 +155,42 @@ for R in Reflections:
         Energy[key] = data[0] + edge
 
 
+<<<<<<< HEAD
+"""  
+ 
+>>>>>>> 1bdc7ba814d585c3e78a4fe3c56ecc64bcd4e5c5
+en_exp, Exp = {}, {}
+for key in exp:
+    # en_exp[key] = exp[key][:,0]
+    # dummy_dafs = exp[key][:,-3] / exp[key][:,-3].mean()
+    # Exp[key] = interp1d(en_exp[key], dummy_dafs, kind='linear')
+    
+<<<<<<< HEAD
+    en_exp[key] = exp_data[key]
+  
+=======
+    en_exp[key] = 
+ 
+>>>>>>> 1bdc7ba814d585c3e78a4fe3c56ecc64bcd4e5c5
+# fit
+Abs = {}
+print("fitting...")
+for key in dafs:
+    if "sat" in key and "D1" in key:
+        if "FDM" in key: 
+            print 'FDM', key
+            Abs[key] = data[key][:,21]
+        else: 
+            print 'Green', key
+            Abs[key] = data[key[:-4]][:,42]
+    elif "sat" in key and "mod" in key:
+        Abs[key] = 1.
+    else:
+        Abs[key] = 1.
+for key in dafs:
+=======
 for key in Sim:
+>>>>>>> 246fdc5cfcbd693926ac890603c1e13177fee3bf
     # p0 = dict(m=0.01, n=1., c=1., dE=0., Exp=Exp[key.split('_')[2]], 
       # Abs=Abs[key], Isim = dafs[key])
     Model, R = key.rsplit("_", 1)
