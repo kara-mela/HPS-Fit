@@ -55,3 +55,7 @@ Temporary Items
 /..DAFS-K-marks.py
 /xafs-L3-compare-HoSi2.py
 /xafs-compare-HoSi2-TUBAF.pdf
+/__init__.pyc
+/_chem_elem.pyc
+/parameter_pic_tools.pic
+/TUBAF.pyc
