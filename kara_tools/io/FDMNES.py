@@ -11,7 +11,7 @@ def loadDAFS(path, ref="xanes", corrected=False, absorption=False,
                 miller index of reflection
     """
     if hasattr(ref, "__iter__"):
-        ref = ref = "".join(map(str, ref))
+        ref = "".join(map(str, ref))
     ref = ref.strip("()")
     data = et.loaddat(path, todict=True, comment="")
     if "xanes" in ref.lower():
