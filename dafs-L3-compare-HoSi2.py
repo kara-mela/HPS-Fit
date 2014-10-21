@@ -177,6 +177,7 @@ for key in fit:
     # plot experiment
     pl.plot(Exp[refl][0] + shift[refl], exp_norm[refl] + k[refl], color='black', marker='.')
 
+# test
 pl.ylim([-0.1,4.3])
 pl.xlim([8025,8199])
 
