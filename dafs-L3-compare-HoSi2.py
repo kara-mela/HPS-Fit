@@ -57,6 +57,7 @@ Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green',
             'modulated-L23-conv_out_conv.txt': 'mod_Green'}
 
 Exp = {}
+ExpFunc = {}
 Energy = {}
 Sim = {}
 Abs = {}
@@ -67,13 +68,16 @@ for R in Reflections:
     fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
     assert len(fname)==1
     fname = fname[0]
-    Exp[R] = et.loaddat(fname, todict=True, comment="")
+    data = et.loaddat(fname, todict=True, comment="")
+    Exp[R] = data["Energy"], data["bragg"]
+    ExpFunc[R] = interp1d(*Exp[R], kind='linear')
     for simfile in Models:
         key = "_".join([Models[simfile], R])
         useabs = R=="sat"
         try:
-            data = io.FDMNES.loadDAFS(simfile, Reflections[R], absorption=useabs)
-        except ValueError:
+            data = io.FDMNES.loadDAFS(simfile, Reflections[R], 
+                                      absorption=useabs)
+        except ValueError: #not found in this model?
             continue
         if useabs:
             Abs[key] = data[2]
@@ -81,16 +85,8 @@ for R in Reflections:
         Energy[key] = data[0] + edge
 
 
-"""  
- 
-en_exp, Exp = {}, {}
-for key in exp:
-    # en_exp[key] = exp[key][:,0]
-    # dummy_dafs = exp[key][:,-3] / exp[key][:,-3].mean()
-    # Exp[key] = interp1d(en_exp[key], dummy_dafs, kind='linear')
-    
-    en_exp[key] = 
- 
+"""
+
 # fit
 Abs = {}
 print("fitting...")
