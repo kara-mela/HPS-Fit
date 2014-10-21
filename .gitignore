@@ -26,8 +26,7 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must end with two \r
-Icon
-
+Icon
 # Thumbnails
 ._*
 
@@ -41,3 +40,18 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+/TODO.txt
+/WHAT.txt
+/modulated-L23-out_bav.txt
+/HoSi2-out_bav.txt
+/HoSi2-Green-out_bav.txt
+/dafs-compare-HoSi2-standard.pdf
+/dafs-compare-HoSi2-TUBAF.pdf
+/D1-L23-Green-out_bav.txt
+/D1-L3-sat-out-v2_bav.txt
+/A-L23-out_bav.txt
+/A-L23-new-out_bav.txt
+/A-L23-Green-out_bav.txt
+/..DAFS-K-marks.py
+/xafs-L3-compare-HoSi2.py
+/xafs-compare-HoSi2-TUBAF.pdf
