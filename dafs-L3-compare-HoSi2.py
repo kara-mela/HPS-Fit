@@ -11,7 +11,7 @@ import pylab as pl
 import collections
 from matplotlib.ticker import MultipleLocator
 from itertools import product
-from kara_tools import TUBAF
+from kara_tools import TUBAF, io
 import matplotlib
 import os
 import evaluationtools as et
@@ -32,69 +32,55 @@ def sim_cut(key, edge, cut, dE, shift):
 edge = 8071
 cut = 45
 
-reflections = ("301", "sat", "110", "001")
+myvars = ["m", "n", "c", "dE"]
 models      = ("mod", "D1", "A", "HS")
 algs        = ("FDM", "Green")
   
-# Cols = collections.namedtuple("Col", "ss sp")
-# cols = dict({"301" : Cols(26,32),
-             # # "sat" : Cols(16,23), # only for D1_FDM_sat
-             # "sat" : Cols(38,44), # I statt Ic, Abs = 44
-             # "110" : Cols(5,11),
-             # "001" : Cols(17,23)})
-
 fit_para, fit, exp_norm = {}, {}, {}
 
 # load data
+
+
+Reflections = {"301":"608", 
+               "sat":"-215", 
+               "110":"220", 
+               "001":"008"}
+
+
+Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
+            'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
+            'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
+            'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
+            'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
+            'MN-v11_conv.txt'                : 'D1_FDM', 
+            'MN-v16_conv.txt'                : 'D1_FDM', 
+            'modulated-L23-conv_out_conv.txt': 'mod_Green'}
+
+Exp = {}
+Energy = {}
+Sim = {}
+Abs = {}
+
 print("loading data...")
-all_files = os.listdir(os.curdir)
+flist = os.listdir(os.curdir)
+for R in Reflections:
+    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
+    assert len(fname)==1
+    fname = fname[0]
+    Exp[R] = et.loaddat(fname, todict=True, comment="")
+    for simfile in Models:
+        key = "_".join([Models[simfile], R])
+        useabs = R=="sat"
+        try:
+            data = io.FDMNES.loadDAFS(simfile, Reflections[R], absorption=useabs)
+        except ValueError:
+            continue
+        if useabs:
+            Abs[key] = data[2]
+        Sim[key] = data[1] / data[1].mean()
+        Energy[key] = data[0] + edge
 
-exp = {}
-for key in reflections:
-    fname = filter(lambda file: key in file and "corr" in file, all_files)[0]
-    dummy = et.loaddat(fname)
-    exp[key] = dict(zip(dummy[1].split(), dummy[0]))
 
-
-name_dict = dict({"mod_Green"  : "modulated-L23-conv_out_conv.txt",
-                  "D1_Green"   : "D1-L23-Green-conv_out_conv.txt",
-                  "D1_FDM_sat" : "MN-v16_conv.txt",
-                  "D1_FDM"     : "MN-v11_conv.txt",
-                  "A_Green"    : "A-L23-Green-conv_out_conv.txt",
-                  "A_FDM"      : "A-L23-new-all-conv_out_conv.txt",
-                  "HS_Green"   : "HoSi2-Green-conv_out_conv.txt",
-                  "HS_FDM"     : "HoSi2-conv_out_conv.txt"})
-data = {}
-for key in name_dict:
-    dummy = et.loaddat(name_dict[key])
-    data[key] = dict(zip(dummy[1].split(), dummy[0]))
-
-myvars = ["m", "n", "c", "dE"]
- 
-# energy/intensity; pre-norming by mean
-energy, dafs = {}, {}
-for key, Ref in product(data, reflections):
-    if len(key.split('_')) == 2:
-        new_key = key + '_' + Ref
-    else:
-        new_key = key
-        Ref = key.split('_')[2]
-    
-    energy[new_key] = data[key]["Energy"] + edge
-    
-    I_ss  = "I(" + Ref + ")ss_0"
-    I_sp  = "I(" + Ref + ")sp_0"
-    Ic_ss = "Ic(" + Ref + ")ss_0"
-    Ic_sp = "Ic(" + Ref + ")sp_0"
-    A     = "A(" + Ref + ")in_0"
-    
-    if Ref == "sat":
-        dafs[new_key] = data[key][I_ss] + data[key][I_sp]
-        Abs[new_key]  = data[key][A]
-    else:
-        dafs[new_key] = data[key][Ic_ss] + data[key][Ic_sp]
-        Abs[new_key] = 1.
-    dafs[new_key] /= dafs[new_key].mean()
 """  
  
 en_exp, Exp = {}, {}
