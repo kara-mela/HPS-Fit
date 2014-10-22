@@ -25,17 +25,18 @@ rc('font', **{'size':14})
 # def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, dE=0, diff=True):
     # return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
     # # return (m*E + n) * Isim / Abs**c  - Exp(E - dE) * diff
-def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
-    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, diff=True):
+    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E) * diff
 
 def sim_cut(key, edge, cut, dE, shift):
     # return the index of the biggest energy that is still smaller, than edge + cut
-    return max(( idx for idx in range(len(Energy[key])) if (Energy[key][idx] < edge + cut + dE - shift)), key=lambda idx: idx)
+    return max(( idx for idx in range(len(Energy[key])) if (Energy[key][idx] < edge + cut + dEd - shift)), key=lambda idx: idx)
 
 edge = 8071
 cut = 45
 
-myvars = ["m", "n", "c", "dE"]
+# myvars = ["m", "n", "c", "dE"]
+myvars = ["m", "n", "c"]
 models      = ("mod", "D1", "A", "HS")
 algs        = ("FDM", "Green")
   
@@ -86,8 +87,11 @@ for R in Reflections:
         Sim[key] = data[1] / data[1].mean()
         Energy[key] = data[0] + edge
         
-print "load"
-dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='')
+dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
+dE = {}
+for idx, key in product(dE_xafs, Sim):
+    if idx.split('_')[0] in key and idx.split('_')[-1] in key:
+        dE[key] = dE_xafs[idx][0]
 
 for key in Sim:
     Model, R = key.rsplit("_", 1)
@@ -98,18 +102,16 @@ for key in Sim:
         p0["Abs"] = Abs[key]
     
     name = key.split('_')[-1]
-    
-    # fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr, dE
-                             # p0, myvars, fitalg="simplex")
-    # if abs(fit_para[key].popt["dE"]) > 50.: fit_para[key].popt["dE"] = 0.
-    print key, fit_para[key].popt["dE"], fit_para[key].popt["c"], fit_para[key].popt["m"], fit_para[key].popt["n"]
+    fit_para[key] = et.fitls(Energy[key]-dE[key], pl.zeros(len(Energy[key])), Icorr,
+      p0, myvars, fitalg="simplex")
+    print key, fit_para[key].popt["c"], fit_para[key].popt["m"], fit_para[key].popt["n"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
 
 # norming
 print("norming...")
 for key in fit: 
-    fit[key] /= max(fit[key])
+    fit[key] /= fit[key].max()
     
     refl = key.split('_')[2]
     f = ExpFunc[refl]
@@ -132,8 +134,8 @@ for key_F in Sim:
     key_G = key_F.replace("FDM", "Green")
     
     # index of cut energy
-    idx_G = sim_cut(key_G, edge, cut, fit_para[key_G].popt["dE"], shift[j])
-    idx_F = sim_cut(key_F, edge, cut, fit_para[key_F].popt["dE"], shift[j])
+    idx_G = sim_cut(key_G, edge, cut, dE[key_G], shift[j])
+    idx_F = sim_cut(key_F, edge, cut, dE[key_F], shift[j])
     
     # binary arrays indicating wether or not the energy is bigger than cut energy
     idx[key_G] = (pl.array(range(len(Energy[key_G]))) >= idx_G)
@@ -176,8 +178,7 @@ for key in fit:
         if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
             None
         else:
-            pl.plot(Energy[key] - fit_para[key].popt["dE"], fit[key] + k[refl], 
-              lw=2*TUBAF.width(ps), color=color)
+            pl.plot(Energy[key]-dE[key], fit[key] + k[refl], lw=2*TUBAF.width(ps), color=color)
         
     # plot experiment
     pl.plot(Exp[refl][0] + shift[refl], exp_norm[refl] + k[refl], color='black', marker='.')
@@ -204,8 +205,8 @@ pl.axes().xaxis.set_minor_locator(MultipleLocator(25))
 pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 
 # labels
-pl.xlabel('energy [eV]', fontsize=18)
-pl.ylabel('intensity [a. u.]', fontsize=18)
+pl.xlabel('Energy [eV]', fontsize=18)
+pl.ylabel('Intensity [a. u.]', fontsize=18)
 for key in Reflections:
     pl.text(8160, .6+k[key], key)
 
