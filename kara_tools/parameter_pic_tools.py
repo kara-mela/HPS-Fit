@@ -13,7 +13,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from kara_tools import chem_elem, TUBAF
 
-def standardize(actual, mini, maxi):
+def standardize(actual, maxi, mini=0.):
     """
     [0,1]-Normierung eines Datensatzes
     """
