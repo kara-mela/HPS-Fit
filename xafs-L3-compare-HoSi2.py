@@ -72,7 +72,7 @@ for key in fit_para:
     header.append(key)
     content.append(dE)
 data = dict(zip(header, content))
-et.savedat('fit-para.dat', data, xcol=1)
+et.savedat('fit-para.dat', data, xcol=header[0])
 
 # norming
 for key in fit: 

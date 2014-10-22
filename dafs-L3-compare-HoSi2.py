@@ -86,7 +86,8 @@ for R in Reflections:
         Sim[key] = data[1] / data[1].mean()
         Energy[key] = data[0] + edge
         
-
+print "load"
+dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='')
 
 for key in Sim:
     Model, R = key.rsplit("_", 1)
