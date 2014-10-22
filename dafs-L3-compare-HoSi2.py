@@ -22,8 +22,11 @@ simplex = True# False#
 from matplotlib import rc
 rc('font', **{'size':14})
 
-def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, dE=0, diff=True):
-    return (m*E + n) * Isim / Abs**c  - Exp(E - dE) * diff
+# def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, dE=0, diff=True):
+    # return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+    # # return (m*E + n) * Isim / Abs**c  - Exp(E - dE) * diff
+def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
+    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
 def sim_cut(key, edge, cut, dE, shift):
     # return the index of the biggest energy that is still smaller, than edge + cut
@@ -82,22 +85,23 @@ for R in Reflections:
             Abs[key] = data[2]
         Sim[key] = data[1] / data[1].mean()
         Energy[key] = data[0] + edge
+        
+
 
 for key in Sim:
-    # p0 = dict(m=0.01, n=1., c=1., dE=0., Exp=Exp[key.split('_')[2]], 
-      # Abs=Abs[key], Isim = dafs[key])
     Model, R = key.rsplit("_", 1)
     
-    p0 = dict(m=1., n=0., c=1., dE=1.5, Exp=ExpFunc[R], Isim = Sim[key])
+    # p0 = dict(m=0., n=1., c=1., dE=1.5, Exp=ExpFunc[R], Isim = Sim[key])
+    p0 = dict(m=0., n=1., c=1., Exp=ExpFunc[R], Isim = Sim[key])
     if key in Abs:
         p0["Abs"] = Abs[key]
     
     name = key.split('_')[-1]
     
-    fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr, 
-                             p0, myvars, fitalg="simplex")
-    
-    print key, fit_para[key]
+    # fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr, dE
+                             # p0, myvars, fitalg="simplex")
+    # if abs(fit_para[key].popt["dE"]) > 50.: fit_para[key].popt["dE"] = 0.
+    print key, fit_para[key].popt["dE"], fit_para[key].popt["c"], fit_para[key].popt["m"], fit_para[key].popt["n"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
 
@@ -171,7 +175,7 @@ for key in fit:
         if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
             None
         else:
-            pl.plot(Energy[key] + fit_para[key].popt["dE"], fit[key] + k[refl], 
+            pl.plot(Energy[key] - fit_para[key].popt["dE"], fit[key] + k[refl], 
               lw=2*TUBAF.width(ps), color=color)
         
     # plot experiment
