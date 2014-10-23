@@ -17,32 +17,73 @@ import os
 import evaluationtools as et
 
 ps = 'TUBAF'
-simplex = True# False#
+simplex = False# True#
 
 from matplotlib import rc
 rc('font', **{'size':14})
 
-def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, dE=0, diff=True):
-    return (m*E + n) * Isim / Abs**c  - Exp(E - dE) * diff
+def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, diff=True):
+    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E) * diff
 
 def sim_cut(key, edge, cut, dE, shift):
     # return the index of the biggest energy that is still smaller, than edge + cut
-    return max(( idx for idx in range(len(Energy[key])) if (Energy[key][idx] < edge + cut + dE - shift)), key=lambda idx: idx)
+    return max(( idx for idx in range(len(Energy[key])) if (Energy[key][idx] < edge + cut + dE[key] - shift)), key=lambda idx: idx)
 
+def get_dE(keys):
+    dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
+    dE = {}
+    for idx, key in product(dE_xafs, keys):
+        if idx.split('_')[0] in key and idx.split('_')[-1] in key:
+            dE[key] = dE_xafs[idx][0]
+    return dE
+
+def get_exp():
+    flist = os.listdir(os.curdir)
+    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
+    assert len(fname) == 1
+    fname = fname[0]
+    data = et.loaddat(fname, todict=True, comment='')
+    Exp = data["Energy"], data["bragg"]
+    return interp1d(*Exp, kind='linear')
+    
+def idx_cut_energy(edge, cut, energy, shift, dE):
+    """
+    determing closest index to cut energy, concerning shift and dE
+    """
+    return list(pl.round_(energy)).index(edge + cut - shift + dE)
+
+def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
+    """
+    ratio for FDM AND Green sim -> adapting to exp
+    """
+    ratio = fit_F[idx_F] / fit_G[idx_G] 
+    
+    dafs_dummy, energy_dummy = [], []
+    
+    for i in range(idx_F):
+        dafs_dummy.append(fit_F[i])
+        energy_dummy.append(e_F[i])
+    
+    for i in range(len(e_G) - idx_G):
+        dafs_dummy.append(fit_G[i]*ratio)
+        energy_dummy.append(e_G[i])
+        
+    return pl.array(dafs_dummy), pl.array(energy_dummy)
+
+    
 edge = 8071
 cut = 45
 
-myvars = ["m", "n", "c", "dE"]
-models      = ("mod", "D1", "A", "HS")
-algs        = ("FDM", "Green")
+# myvars = ["m", "n", "c", "dE"]
+myvars = ["m", "n", "c"]
   
 fit_para, fit, exp_norm = {}, {}, {}
 
 # load data
-Reflections = {"301":"608", 
-               "sat":"-215", 
-               "110":"220", 
-               "001":"008"}
+Reflections = {"301" : "608", 
+               "sat" : "-215", 
+               "110" : "220", 
+               "001" : "008"}
 
 Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
             'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
@@ -53,63 +94,79 @@ Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green',
             'MN-v16_conv.txt'                : 'D1_FDM', 
             'modulated-L23-conv_out_conv.txt': 'mod_Green'}
 
-Exp = {}
 ExpFunc = {}
+ExpEn = {}
 Energy = {}
 Sim = {}
 Abs = {}
 
+def get_sim(R, Reflections, simfile):
+    useabs = R=="sat"
+    Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
+    
+    try:
+        data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
+        if useabs:
+            Abs[key] = data[2]
+        return data[1] / data[1].mean(), data[0] + edge
+    except ValueError: #not found in this model?
+        print("Reflection %s not found in file %s"%(R, simfile))
+
 print("loading data...")
-flist = os.listdir(os.curdir)
 for R in Reflections:
-    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
-    assert len(fname)==1
-    fname = fname[0]
-    data = et.loaddat(fname, todict=True, comment='')
-    Exp[R] = data["Energy"], data["bragg"]
-    ExpFunc[R] = interp1d(*Exp[R], kind='linear')
+    ExpFunc[R] = get_exp()
+
     for simfile in Models:
         key = "_".join([Models[simfile], R])
+        
+        # print key
+        # Sim[key], Energy[key] = get_sim(R, Reflections, simfile)
+        
         useabs = R=="sat"
         Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
+        
         try:
             data = io.FDMNES.loadDAFS(simfile, Ref, 
                                       absorption=useabs)
         except ValueError: #not found in this model?
             print("Reflection %s not found in file %s"%(R, simfile))
             continue
+        
         if useabs:
             Abs[key] = data[2]
+        
         Sim[key] = data[1] / data[1].mean()
         Energy[key] = data[0] + edge
 
+print "\ndone\n"
+
+dE = get_dE(Sim.keys())  
+  
+# fitting
 for key in Sim:
-    # p0 = dict(m=0.01, n=1., c=1., dE=0., Exp=Exp[key.split('_')[2]], 
-      # Abs=Abs[key], Isim = dafs[key])
-    Model, R = key.rsplit("_", 1)
+    R = key.split("_")[-1]
     
-    p0 = dict(m=1., n=0., c=1., dE=1.5, Exp=ExpFunc[R], Isim = Sim[key])
+    p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim = Sim[key])
+    
     if key in Abs:
         p0["Abs"] = Abs[key]
     
-    name = key.split('_')[-1]
+    fit_para[key] = et.fitls(Energy[key] - dE[key], pl.zeros(len(Energy[key])), Icorr,
+      p0, myvars, fitalg="simplex")
     
-    fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr, 
-                             p0, myvars, fitalg="simplex")
-    
-    print key, fit_para[key]
+    # print key, fit_para[key].popt["c"], fit_para[key].popt["m"], fit_para[key].popt["n"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
 
 # norming
 print("norming...")
 for key in fit: 
-    fit[key] /= max(fit[key])
+    fit[key] /= fit[key].max()
     
-    refl = key.split('_')[2]
-    f = ExpFunc[refl]
-    en = Exp[refl][0]
-    exp_norm[refl] = f(en)/f(en[:284]).max()
+    R = key.split('_')[-1]
+    f = ExpFunc[R]
+    # exp_norm[R] = f(ExpEn[R])/f(ExpEn[R][:284]).max()
+    exp_norm[R] = interp1d(f.x[:284], f.y[:284], kind='linear')
     
 k, shift = {}, {}
 j = 0
@@ -120,36 +177,16 @@ for key in Reflections:
 
 # cut
 print("cutting...")
-idx = {}
 for key_F in Sim:
     if not "FDM" in key:
         continue
     key_G = key_F.replace("FDM", "Green")
     
-    # index of cut energy
-    idx_G = sim_cut(key_G, edge, cut, fit_para[key_G].popt["dE"], shift[j])
-    idx_F = sim_cut(key_F, edge, cut, fit_para[key_F].popt["dE"], shift[j])
+    idx_F = idx_cut_energy(edge, cut, Energy[key_F], shift[key_F], dE[key_F])
+    idx_G = idx_cut_energy(edge, cut, Energy[key_G], shift[key_G], dE[key_G])
     
-    # binary arrays indicating wether or not the energy is bigger than cut energy
-    idx[key_G] = (pl.array(range(len(Energy[key_G]))) >= idx_G)
-    idx[key_F] = -(pl.array(range(len(Energy[key_F]))) >= idx_F)
-    
-    # ratio of intensities at cut-energy
-    ratio = fit[key_F][idx_G] / fit[key_G][idx_G] 
-    
-    # create array consisting of FDM data upto cut energy, followed by Green data
-    dafs_dummy, energy_dummy = [], []
-    for i in range(len(idx[key_F])):
-        if idx[key_F][i] != 0:
-            dafs_dummy.append(fit[key_F][i])
-            energy_dummy.append(Energy[key_F][i])
-    for i in range(len(idx[key_G])):
-        if idx[key_G][i] != 0:
-            dafs_dummy.append(fit[key_G][i]*ratio)
-            energy_dummy.append(Energy[key_G][i])
-    fit[key_G] = pl.array(dafs_dummy)
-    Energy[key_G] = pl.array(energy_dummy)
-idx["mod"] = 1.
+    fit[key_G], Energy[key_G] = patching(fit[key_F], fit[key_G], 
+      idx_F, idx_G, Energy[key_F], Energy[key_G])
 
 #----------------------------------------------------------
 # Plot fit results
@@ -171,11 +208,11 @@ for key in fit:
         if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
             None
         else:
-            pl.plot(Energy[key] + fit_para[key].popt["dE"], fit[key] + k[refl], 
-              lw=2*TUBAF.width(ps), color=color)
+            pl.plot(Energy[key]-dE[key], fit[key] + k[refl], lw=2*TUBAF.width(ps), color=color)
         
     # plot experiment
-    pl.plot(Exp[refl][0] + shift[refl], exp_norm[refl] + k[refl], color='black', marker='.')
+    print refl
+    pl.plot(Energy[key] + shift[refl], exp_norm[refl](Energy[key]) + k[refl], color='black', marker='.')
 
 # test
 pl.ylim([-0.1,4.3])
@@ -199,8 +236,8 @@ pl.axes().xaxis.set_minor_locator(MultipleLocator(25))
 pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 
 # labels
-pl.xlabel('energy [eV]', fontsize=18)
-pl.ylabel('intensity [a. u.]', fontsize=18)
+pl.xlabel('Energy [eV]', fontsize=18)
+pl.ylabel('Intensity [a. u.]', fontsize=18)
 for key in Reflections:
     pl.text(8160, .6+k[key], key)
 
