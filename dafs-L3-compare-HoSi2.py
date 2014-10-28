@@ -22,12 +22,13 @@ simplex = False# True#
 from matplotlib import rc
 rc('font', **{'size':14})
 
-def Icorr(E, Isim, Exp, m=0, n=1, c=0., Abs=1, diff=True):
-    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E) * diff
+"""
+TODO:
+- comparison to fit in ..DAFS-L3-compare-HoSi2.py
+"""
 
-def sim_cut(key, edge, cut, dE, shift):
-    # return the index of the biggest energy that is still smaller, than edge + cut
-    return max(( idx for idx in range(len(Energy[key])) if (Energy[key][idx] < edge + cut + dE[key] - shift)), key=lambda idx: idx)
+def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
+    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
 def get_dE(keys):
     dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
@@ -37,20 +38,34 @@ def get_dE(keys):
             dE[key] = dE_xafs[idx][0]
     return dE
 
-def get_exp():
+def get_exp(R):
     flist = os.listdir(os.curdir)
     fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
     assert len(fname) == 1
     fname = fname[0]
     data = et.loaddat(fname, todict=True, comment='')
     Exp = data["Energy"], data["bragg"]
-    return interp1d(*Exp, kind='linear')
+    return interp1d(*Exp, kind='linear'), data["Energy"]
     
 def idx_cut_energy(edge, cut, energy, shift, dE):
     """
     determing closest index to cut energy, concerning shift and dE
-    """
-    return list(pl.round_(energy)).index(edge + cut - shift + dE)
+    """    
+    return list(pl.round_(energy)).index(pl.round_(edge + cut - shift + dE))
+
+def set_k(key_list):
+    k = {}
+    j = 0
+    for key in key_list:
+        k[key] = j
+        j += 1.
+    return k
+
+def set_shift(key_list): 
+    shift = {}
+    for key in key_list:
+        shift[key] = -23.5 if key == "001" else 0.
+    return shift
 
 def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
     """
@@ -69,53 +84,37 @@ def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
         energy_dummy.append(e_G[i])
         
     return pl.array(dafs_dummy), pl.array(energy_dummy)
-
     
-edge = 8071
-cut = 45
+def my_norm(fit, Expfunc, kind='max'):
+    for key in fit: 
+        if kind == 'max':
+            fit[key] /= fit[key].max()
+        elif kind == 'mean':
+            fit[key] /= fit[key].mean()
+        else:
+            print("Unexpected kind of norming.")
+            
+        R = key.split('_')[-1]
+        f = ExpFunc[R]
+        if kind == 'max':
+            exp_norm[R] = interp1d(f.x[E_lim[0]:E_lim[1]], 
+              f.y[E_lim[0]:E_lim[1]]/(f.y[E_lim[0]:E_lim[1]].max()), kind='linear')
+        elif kind == 'mean':
+            exp_norm[R] = interp1d(f.x[E_lim[0]:E_lim[1]], 
+              f.y[E_lim[0]:E_lim[1]]/(f.y[E_lim[0]:E_lim[1]].mean()), kind='linear')
+        else:
+            print("Unexpected kind of norming.")
+    return fit, exp_norm
 
-# myvars = ["m", "n", "c", "dE"]
-myvars = ["m", "n", "c"]
-  
-fit_para, fit, exp_norm = {}, {}, {}
-
-# load data
-Reflections = {"301" : "608", 
-               "sat" : "-215", 
-               "110" : "220", 
-               "001" : "008"}
-
-Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
-            'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
-            'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
-            'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
-            'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
-            'MN-v11_conv.txt'                : 'D1_FDM', 
-            'MN-v16_conv.txt'                : 'D1_FDM', 
-            'modulated-L23-conv_out_conv.txt': 'mod_Green'}
-
-ExpFunc = {}
-ExpEn = {}
-Energy = {}
-Sim = {}
-Abs = {}
-
-def get_sim(R, Reflections, simfile):
-    useabs = R=="sat"
-    Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
-    
-    try:
-        data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
-        if useabs:
-            Abs[key] = data[2]
-        return data[1] / data[1].mean(), data[0] + edge
-    except ValueError: #not found in this model?
-        print("Reflection %s not found in file %s"%(R, simfile))
-
-print("loading data...")
-for R in Reflections:
-    ExpFunc[R] = get_exp()
-
+def get_sim(R, Energy, Sim, Abs):
+    Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
+                'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
+                'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
+                'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
+                'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
+                'MN-v11_conv.txt'                : 'D1_FDM', 
+                'MN-v16_conv.txt'                : 'D1_FDM', 
+                'modulated-L23-conv_out_conv.txt': 'mod_Green'}
     for simfile in Models:
         key = "_".join([Models[simfile], R])
         
@@ -126,8 +125,7 @@ for R in Reflections:
         Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
         
         try:
-            data = io.FDMNES.loadDAFS(simfile, Ref, 
-                                      absorption=useabs)
+            data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
         except ValueError: #not found in this model?
             print("Reflection %s not found in file %s"%(R, simfile))
             continue
@@ -137,63 +135,85 @@ for R in Reflections:
         
         Sim[key] = data[1] / data[1].mean()
         Energy[key] = data[0] + edge
+    return Sim, Energy, Abs
 
-print "\ndone\n"
+    
+edge = 8071
+cut = 45
+E_lim = [0, 284]
 
-dE = get_dE(Sim.keys())  
-  
+myvars = ["m", "n", "c"]
+
+Reflections = {"301" : "608", 
+               "sat" : "-215", 
+               "110" : "220", 
+               "001" : "008"}
+
+ExpFunc = {}
+ExpEn = {}
+Energy = {}
+Sim = {}
+Abs = {}
+
+# load data
+print("loading data...")
+for R in Reflections:
+    ExpFunc[R], ExpEn[R] = get_exp(R)
+    
+    Sim, Energy, Abs = get_sim(R, Energy, Sim, Abs)
+
+dE = get_dE(Sim.keys())
+
 # fitting
+fit_para, fit, exp_norm = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     
-    p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim = Sim[key])
+    # Parameter von sat als Startparameter
+    p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
     
     if key in Abs:
         p0["Abs"] = Abs[key]
     
-    fit_para[key] = et.fitls(Energy[key] - dE[key], pl.zeros(len(Energy[key])), Icorr,
+    fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr,
       p0, myvars, fitalg="simplex")
-    
-    # print key, fit_para[key].popt["c"], fit_para[key].popt["m"], fit_para[key].popt["n"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
 
 # norming
-print("norming...")
-for key in fit: 
-    fit[key] /= fit[key].max()
-    
-    R = key.split('_')[-1]
-    f = ExpFunc[R]
-    # exp_norm[R] = f(ExpEn[R])/f(ExpEn[R][:284]).max()
-    exp_norm[R] = interp1d(f.x[:284], f.y[:284], kind='linear')
-    
-k, shift = {}, {}
-j = 0
-for key in Reflections:
-    k[key] = j
-    shift[key] = -23.5 if key == "001" else 0.
-    j += 1.
+print("norming...")    
+fit, exp_norm = my_norm(fit, ExpFunc)
+
+k = set_k(Reflections.keys())
+shift = set_shift(Reflections.keys())
 
 # cut
 print("cutting...")
 for key_F in Sim:
-    if not "FDM" in key:
+    if not "FDM" in key_F:
         continue
+    elif "mod" in key_F:
+        continue
+    
     key_G = key_F.replace("FDM", "Green")
     
-    idx_F = idx_cut_energy(edge, cut, Energy[key_F], shift[key_F], dE[key_F])
-    idx_G = idx_cut_energy(edge, cut, Energy[key_G], shift[key_G], dE[key_G])
+    R = key_F.split('_')[-1]
+    
+    print key_F
+    idx_F = idx_cut_energy(edge, cut, Energy[key_F], shift[R], dE[key_F])
+    print key_G
+    idx_G = idx_cut_energy(edge, cut, Energy[key_G], shift[R], dE[key_G])
     
     fit[key_G], Energy[key_G] = patching(fit[key_F], fit[key_G], 
       idx_F, idx_G, Energy[key_F], Energy[key_G])
+
 
 #----------------------------------------------------------
 # Plot fit results
 print("plotting...")
 f = pl.figure(figsize=(5,10))
 for key in fit:
-    refl = key.split('_')[2]
+    R = key.split('_')[2]
     if "FDM" not in key:
         if "mod" in key:
             color = TUBAF.gruen(ps)
@@ -206,20 +226,19 @@ for key in fit:
         
         # plot simulations
         if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
-            None
+            pass
         else:
-            pl.plot(Energy[key]-dE[key], fit[key] + k[refl], lw=2*TUBAF.width(ps), color=color)
+            pl.plot(Energy[key] - dE[key], fit[key] + k[R], lw=2*TUBAF.width(ps), color=color)
         
     # plot experiment
-    print refl
-    pl.plot(Energy[key] + shift[refl], exp_norm[refl](Energy[key]) + k[refl], color='black', marker='.')
+    pl.plot(ExpEn[R][E_lim[0]:E_lim[1]] + shift[R], exp_norm[R](ExpEn[R][E_lim[0]:E_lim[1]]) + k[R], color='black', marker='.')
 
 # test
 pl.ylim([-0.1,4.3])
 pl.xlim([8025,8199])
 
 # virtual curves for creating legend
-my_exp = matplotlib.lines.Line2D(*Exp["001"], marker='.', color='black')
+my_exp = matplotlib.lines.Line2D(Energy["mod_Green_001"], fit["mod_Green_001"], marker='.', color='black')
 my_mod = matplotlib.lines.Line2D(Energy["mod_Green_001"], fit["mod_Green_001"], lw=2*TUBAF.width(ps), color=TUBAF.gruen(ps))
 my_D1 = matplotlib.lines.Line2D(Energy["D1_Green_001"], fit["D1_Green_001"], lw=2*TUBAF.width(ps), color=TUBAF.rot(ps))
 my_A = matplotlib.lines.Line2D(Energy["A_Green_001"], fit["A_Green_001"], lw=2*TUBAF.width(ps), color=TUBAF.orange(ps))
