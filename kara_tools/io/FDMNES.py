@@ -1,7 +1,7 @@
 import evaluationtools as et
 
 
-def loadDAFS(path, ref="xanes", corrected=False, absorption=False, 
+def loadDAFS(path, ref="xanes", corrected=0, absorption=False, 
              pol="mixed"):
     """
         Load convoluted DAFS intensities from FDMNES output file.
@@ -30,7 +30,14 @@ def loadDAFS(path, ref="xanes", corrected=False, absorption=False,
     if "xanes" in ref.lower():
         return data["Energy"], data["<xanes>"]
     elif all([(s.isdigit() or s=="-") for s in ref]):
-        col = "Ic" if corrected else "I"
+        # col = "Ic" if corrected else "I"
+        if corrected == 1:
+            col = "Ic"
+        elif corrected == 2:
+            col = "Id"
+        else:
+            col = "I"
+        
         col += "(%s)"%ref
         colss = col+"ss_0"
         colsp = col+"sp_0"

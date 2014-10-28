@@ -102,6 +102,11 @@ def my_norm(fit, Expfunc, kind='max'):
     return fit, exp_norm
 
 def get_sim(R, Energy, Sim, Abs):
+    """
+    loading data from files
+    first rough norming to mean()
+    
+    """
     Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
                 'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
                 'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
@@ -112,9 +117,6 @@ def get_sim(R, Energy, Sim, Abs):
                 'modulated-L23-conv_out_conv.txt': 'mod_Green'}
     for simfile in Models:
         key = "_".join([Models[simfile], R])
-        
-        # print key
-        # Sim[key], Energy[key] = get_sim(R, Reflections, simfile)
         
         useabs = R=="sat"
         Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
