@@ -22,11 +22,6 @@ simplex = False# True#
 from matplotlib import rc
 rc('font', **{'size':14})
 
-"""
-TODO:
-- comparison to fit in ..DAFS-L3-compare-HoSi2.py
-"""
-
 def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
     return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
@@ -79,7 +74,7 @@ def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
         dafs_dummy.append(fit_F[i])
         energy_dummy.append(e_F[i])
     
-    for i in range(len(e_G) - idx_G):
+    for i in range(idx_G,len(e_G)):
         dafs_dummy.append(fit_G[i]*ratio)
         energy_dummy.append(e_G[i])
         
@@ -140,7 +135,7 @@ def get_sim(R, Energy, Sim, Abs):
     
 edge = 8071
 cut = 45
-E_lim = [0, 284]
+E_lim = [0, 350] # only L3 edge
 
 myvars = ["m", "n", "c"]
 
@@ -169,14 +164,17 @@ fit_para, fit, exp_norm = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     
-    # Parameter von sat als Startparameter
-    p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
+    # p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
+    p0 = dict(m=0.03, n=40.01, c=1.5, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
     
     if key in Abs:
         p0["Abs"] = Abs[key]
     
     fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr,
       p0, myvars, fitalg="simplex")
+    
+    if "sat" in key and "D1" in key:
+        print "   sat-Parameter:", fit_para[key].popt["m"], fit_para[key].popt["n"], fit_para[key].popt["c"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
 
@@ -199,9 +197,7 @@ for key_F in Sim:
     
     R = key_F.split('_')[-1]
     
-    print key_F
     idx_F = idx_cut_energy(edge, cut, Energy[key_F], shift[R], dE[key_F])
-    print key_G
     idx_G = idx_cut_energy(edge, cut, Energy[key_G], shift[R], dE[key_G])
     
     fit[key_G], Energy[key_G] = patching(fit[key_F], fit[key_G], 
