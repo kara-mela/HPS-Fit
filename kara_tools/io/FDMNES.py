@@ -9,6 +9,19 @@ def loadDAFS(path, ref="xanes", corrected=False, absorption=False,
         Inputs:
             ref : str
                 miller index of reflection
+            corrected : int
+                0 - no absorption correction
+                1 - normal absorption correction
+                2 - double absorption correction
+            absorption : bool
+                if True, return the self absorption spectra as third output
+            pol : str
+                Defines which columns to use with respect to polarization of
+                the diffracted beam. Can be:
+                    "sigma" - polarized perpendicular to scattering plane
+                    "pi"    - polarized parallel to scattering plane
+                    "mixed  - sum of sigma and pi
+        
     """
     if hasattr(ref, "__iter__"):
         ref = "".join(map(str, ref))
@@ -32,7 +45,7 @@ def loadDAFS(path, ref="xanes", corrected=False, absorption=False,
         
         if absorption:
             colA = "A(%s)"%ref
-            A = data[colA+"in_0"] + data[colA+"ou_0"] # in case of symmetric relection
+            A = data[colA+"in_0"] + data[colA+"ou_0"] # in case of symmetric reflection
     else:
         raise ValueError("Invalid input for `ref'.")
     if absorption:
