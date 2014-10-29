@@ -22,8 +22,16 @@ simplex = False# True#
 from matplotlib import rc
 rc('font', **{'size':14})
 
-def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
-    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+# # # def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
+    # # # return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+
+# def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
+def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
+    m, n, c = v
+    if simplex:
+        return (((m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff)**2).sum()
+    else:
+        return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
 def get_dE(keys):
     dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
@@ -165,8 +173,7 @@ dE = get_dE(Sim.keys())
 fit_para, fit, exp_norm = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
-    
-    # p0 = dict(m=0.01, n=1.01, c=1.01, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
+    """
     p0 = dict(m=0.03, n=40.01, c=1.5, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
     
     if key in Abs:
@@ -179,6 +186,18 @@ for key in Sim:
         print "   sat-Parameter:", fit_para[key].popt["m"], fit_para[key].popt["n"], fit_para[key].popt["c"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
+    """
+    p0 = [1., 0., 1.]
+    # def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
+    if key not in Abs:
+        Abs[key] = 1.
+    args = (Energy[key], Sim[key], ExpFunc[R], dE[key], Abs[key])
+    if simplex:
+        fit_para[key] = fmin(Icorr, p0, args=args)
+    else:
+        fit_para[key] = leastsq(Icorr, p0, args=args, full_output=True)[0]
+    fit[key] = Icorr(v=fit_para[key], E=Energy[key], Isim=Sim[key], 
+      Exp=ExpFunc[R], Abs=Abs[key], dE=dE[key], diff=False)
 
 # norming
 print("norming...")    
