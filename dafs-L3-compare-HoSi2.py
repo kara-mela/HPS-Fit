@@ -17,14 +17,15 @@ import os
 import evaluationtools as et
 
 ps = 'TUBAF'
-simplex = False# True#
+simplex = True# False#
 
 from matplotlib import rc
 rc('font', **{'size':14})
 
-# # # def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
-    # # # return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
-
+def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
+    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+"""
+#old routine
 # def Icorr(E, Isim, Exp, dE, m=0, n=1, c=0., Abs=1, diff=True):
 def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
     m, n, c = v
@@ -32,6 +33,7 @@ def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
         return (((m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff)**2).sum()
     else:
         return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
+"""
 
 def get_dE(keys):
     dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
@@ -54,7 +56,8 @@ def idx_cut_energy(edge, cut, energy, shift, dE):
     """
     determing closest index to cut energy, concerning shift and dE
     """    
-    return list(pl.round_(energy)).index(pl.round_(edge + cut - shift + dE))
+    # return list(pl.round_(energy)).index(pl.round_(edge + cut - shift + dE))
+    return list(pl.round_(energy)).index(pl.round_(edge + cut + dE))
 
 def set_k(key_list):
     k = {}
@@ -74,19 +77,11 @@ def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
     """
     ratio for FDM AND Green sim -> adapting to exp
     """
-    ratio = fit_F[idx_F] / fit_G[idx_G] 
+    ratio = fit_F[idx_F] / fit_G[idx_G]
     
-    dafs_dummy, energy_dummy = [], []
-    
-    for i in range(idx_F):
-        dafs_dummy.append(fit_F[i])
-        energy_dummy.append(e_F[i])
-    
-    for i in range(idx_G,len(e_G)):
-        dafs_dummy.append(fit_G[i]*ratio)
-        energy_dummy.append(e_G[i])
-        
-    return pl.array(dafs_dummy), pl.array(energy_dummy)
+    fit_G = pl.hstack((fit_F[0:idx_F], fit_G[idx_G:-1]*ratio))
+    e_G = pl.hstack((e_F[0:idx_F], e_G[idx_G:-1]))
+    return fit_G, e_G
     
 def my_norm(fit, Expfunc, kind='max'):
     for key in fit: 
@@ -169,11 +164,32 @@ for R in Reflections:
 
 dE = get_dE(Sim.keys())
 
-# fitting
+# Daten beschneiden
+k = set_k(Reflections.keys())
+shift = set_shift(Reflections.keys())
+
+idx = {}
+for key in Energy:
+    R = key.split('_')[-1]
+    idx = idx_cut_energy(edge, cut, Energy[key], shift[R], dE[key])
+    
+    if "mod" in key:
+        limits = [0,-1]
+    elif "FDM" in key:
+        limits = [0,idx]
+    else:
+        limits = [idx,-1]
+    
+    Sim[key] = Sim[key][limits[0]:limits[1]]
+    Energy[key] = Energy[key][limits[0]:limits[1]]
+    if key in Abs.keys():
+        Abs[key] = Abs[key][limits[0]:limits[1]]
+    
+# Fitten
 fit_para, fit, exp_norm = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
-    """
+    
     p0 = dict(m=0.03, n=40.01, c=1.5, Exp=ExpFunc[R], Isim=Sim[key], dE=dE[key])
     
     if key in Abs:
@@ -182,31 +198,27 @@ for key in Sim:
     fit_para[key] = et.fitls(Energy[key], pl.zeros(len(Energy[key])), Icorr,
       p0, myvars, fitalg="simplex")
     
-    if "sat" in key and "D1" in key:
-        print "   sat-Parameter:", fit_para[key].popt["m"], fit_para[key].popt["n"], fit_para[key].popt["c"]
+    # if "sat" in key and "D1" in key:
+        # print "   sat-Parameter:", fit_para[key].popt["m"], 
+          # fit_para[key].popt["n"], fit_para[key].popt["c"]
     
     fit[key] = Icorr(Energy[key], diff=False, **fit_para[key].popt)
-    """
-    p0 = [1., 0., 1.]
-    # def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
-    if key not in Abs:
-        Abs[key] = 1.
-    args = (Energy[key], Sim[key], ExpFunc[R], dE[key], Abs[key])
-    if simplex:
-        fit_para[key] = fmin(Icorr, p0, args=args)
-    else:
-        fit_para[key] = leastsq(Icorr, p0, args=args, full_output=True)[0]
-    fit[key] = Icorr(v=fit_para[key], E=Energy[key], Isim=Sim[key], 
-      Exp=ExpFunc[R], Abs=Abs[key], dE=dE[key], diff=False)
+"""
+    # # old routine
+    # p0 = [1., 0., 1.]
+    # # def Icorr(v, E, Isim, Exp, dE, Abs=1, diff=True):
+    # if key not in Abs:
+        # Abs[key] = 1.
+    # args = (Energy[key], Sim[key], ExpFunc[R], dE[key], Abs[key])
+    # if simplex:
+        # fit_para[key] = fmin(Icorr, p0, args=args)
+    # else:
+        # fit_para[key] = leastsq(Icorr, p0, args=args, full_output=True)[0]
+    # fit[key] = Icorr(v=fit_para[key], E=Energy[key], Isim=Sim[key], 
+      # Exp=ExpFunc[R], Abs=Abs[key], dE=dE[key], diff=False)
+"""
 
-# norming
-print("norming...")    
-fit, exp_norm = my_norm(fit, ExpFunc)
-
-k = set_k(Reflections.keys())
-shift = set_shift(Reflections.keys())
-
-# cut
+# Zusammensetzen
 print("cutting...")
 for key_F in Sim:
     if not "FDM" in key_F:
@@ -216,13 +228,12 @@ for key_F in Sim:
     
     key_G = key_F.replace("FDM", "Green")
     
-    R = key_F.split('_')[-1]
-    
-    idx_F = idx_cut_energy(edge, cut, Energy[key_F], shift[R], dE[key_F])
-    idx_G = idx_cut_energy(edge, cut, Energy[key_G], shift[R], dE[key_G])
-    
-    fit[key_G], Energy[key_G] = patching(fit[key_F], fit[key_G], 
-      idx_F, idx_G, Energy[key_F], Energy[key_G])
+    print key_F, Energy[key_F][-1], Energy[key_G][0]
+    fit[key_G], Energy[key_G] = patching(fit[key_F], fit[key_G], -1, 0, Energy[key_F], Energy[key_G])
+    print key_F, Energy[key_G][len(Energy[key_F])-2:len(Energy[key_F])+1]
+# normieren
+print("norming...")    
+fit, exp_norm = my_norm(fit, ExpFunc)
 
 
 #----------------------------------------------------------
