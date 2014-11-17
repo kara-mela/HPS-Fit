@@ -37,14 +37,13 @@ def get_dE(keys):
             dE[key] = dE_xafs[idx][0]
     return dE
 
-def get_exp():
-    flist = os.listdir(os.curdir)
+def get_exp(R, DIR = os.curdir):
+    flist = os.listdir(DIR)
     fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
-    assert len(fname) == 1
+    assert len(fname) == 1, "More than 1 file found."
     fname = fname[0]
     data = et.loaddat(fname, todict=True, comment='')
-    Exp = data["Energy"], data["bragg"]
-    return interp1d(*Exp, kind='linear')
+    return interp1d(data["Energy"], data["bragg"], kind='linear')
     
 def idx_cut_energy(edge, cut, energy, shift, dE):
     """
@@ -95,7 +94,6 @@ Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green',
             'modulated-L23-conv_out_conv.txt': 'mod_Green'}
 
 ExpFunc = {}
-ExpEn = {}
 Energy = {}
 Sim = {}
 Abs = {}
@@ -114,7 +112,7 @@ def get_sim(R, Reflections, simfile):
 
 print("loading data...")
 for R in Reflections:
-    ExpFunc[R] = get_exp()
+    ExpFunc[R] = get_exp(R)
 
     for simfile in Models:
         key = "_".join([Models[simfile], R])
@@ -126,8 +124,7 @@ for R in Reflections:
         Ref = Reflections[R] if not ("HS_" in Models[simfile]) else R
         
         try:
-            data = io.FDMNES.loadDAFS(simfile, Ref, 
-                                      absorption=useabs)
+            data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
         except ValueError: #not found in this model?
             print("Reflection %s not found in file %s"%(R, simfile))
             continue
