@@ -9,7 +9,7 @@ import collections
 Simulation = collections.namedtuple("Sim", ["E", "Dafs", "Abs"])
 
 def get_dE(keys):
-    dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
+    dE_xafs = et.loaddat('fit-para_enec.dat', todict=True, comment='#')
     dE = {}
     for idx, key in product(dE_xafs, keys):
         if idx.split('_')[0] in key and idx.split('_')[-1] in key:

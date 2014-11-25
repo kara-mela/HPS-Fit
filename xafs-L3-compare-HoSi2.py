@@ -46,6 +46,7 @@ data["A_FDM"] = pl.loadtxt("A-L23-new-all-conv_out_conv.txt", skiprows=1)
 data["HS_Green"] = pl.loadtxt("HoSi2-Green-conv_out_conv.txt", skiprows=1)
 data["HS_FDM"] = pl.loadtxt("HoSi2-conv_out_conv.txt", skiprows=1)
 exp_data = pl.loadtxt("dafs_hps_sat_psi1_t1_corr.dat", skiprows=1)
+# exp_data = pl.loadtxt("dafs_hps_110_ho_r1_corr_enec.dat", skiprows=1)
 
 # energy
 for key in data:
