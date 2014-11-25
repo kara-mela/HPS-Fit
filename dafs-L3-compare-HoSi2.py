@@ -48,6 +48,7 @@ for R in Reflections:
     Sim.update(get_sim(R, Reflections, edge))
 
 dE = get_dE(Sim.keys())
+
 for key in Sim:
     Sim[key][0] += dE[key] # Energy correction
 # Daten beschneiden und zusammenfuehren
@@ -55,43 +56,20 @@ idx = {}
 for key in Sim.keys():
     if not "FDM" in key:
         continue
-<<<<<<< HEAD
     Sim[key][0] += dE[key] # Energy correction
-    R = key.split('_')[-1]
-    idxF = idx_cut_energy(edge, cut, Sim[key][0], shift[R])
-    # if "mod" in key:
-        # continue
-        # #limits = slice(0,-1)
-    # if "FDM" in key:
-    if True:
-        keyG = key.replace("FDM", "Green")
-        
-        # idxG = idx_cut_energy(edge, cut, Sim[keyG][0], shift[R])
-        """
-        mit aktueller Herangehensweise besteht ein groesserer Sprung von 3eV 
-        an cut zwischen zwei Energieschritten
-        wird idxG gesetzt, dann gibt es einen Intensitaetssprung und es muss 
-        geglaettet werden
-        """
-        limitsF = slice(0,idxF)
-        limitsG = slice(idxF, None)
-        
-        Sim[key] = pl.hstack((Sim[key][:,limitsF], Sim[keyG][:,limitsG]))
-=======
     if "mod" in key:
         continue
         #limits = slice(0,-1)
     R = key.split('_')[-1]
-    if "FDM" in key:
-        keyG = key.replace("FDM", "Green")
-        idxF = Sim[key][0] <= (edge + cut)
-        idxG = Sim[keyG][0] > (edge + cut)
-        for i in [1,2]:
-            ratio = Sim[keyG][i,idxG][0] / Sim[key][i,~idxF][0]
-            Sim[keyG][i,idxG] /= ratio
-        Sim[key] = pl.hstack((Sim[key][:,idxF], Sim[keyG][:,idxG]))
->>>>>>> ed4fc592b2df75c16d0ba6e0b5257cefd0c51f97
-        Sim.pop(keyG)
+    
+    keyG = key.replace("FDM", "Green")
+    idxF = Sim[key][0] <= (edge + cut)
+    idxG = Sim[keyG][0] > (edge + cut)
+    for i in [1,2]:
+        ratio = Sim[keyG][i,idxG][0] / Sim[key][i,~idxF][0]
+        Sim[keyG][i,idxG] /= ratio
+    Sim[key] = pl.hstack((Sim[key][:,idxF], Sim[keyG][:,idxG]))
+    Sim.pop(keyG)
 
 for key in Sim.keys():
     if Sim[key][1].max() < 1e-10:
@@ -144,8 +122,7 @@ for key in fit:
         pass
     else:
         lines[label] = pl.plot(fitE[key], fit[key]+k[R], 
-                               # lw=2*TUBAF.width(ps), 
-                               color=color, marker='.')[0]
+                               lw=2*TUBAF.width(ps), color=color)[0]
     
 for R in ExpFunc:
     # plot experiment
