@@ -56,14 +56,24 @@ for key in Sim.keys():
         continue
     Sim[key][0] += dE[key] # Energy correction
     R = key.split('_')[-1]
-    idx = idx_cut_energy(edge, cut, Sim[key][0], shift[R])
-    if "mod" in key:
-        continue
-        #limits = slice(0,-1)
-    if "FDM" in key:
-        limitsF = slice(0,idx)
-        limitsG = slice(idx, None)
+    idxF = idx_cut_energy(edge, cut, Sim[key][0], shift[R])
+    # if "mod" in key:
+        # continue
+        # #limits = slice(0,-1)
+    # if "FDM" in key:
+    if True:
         keyG = key.replace("FDM", "Green")
+        
+        # idxG = idx_cut_energy(edge, cut, Sim[keyG][0], shift[R])
+        """
+        mit aktueller Herangehensweise besteht ein groesserer Sprung von 3eV 
+        an cut zwischen zwei Energieschritten
+        wird idxG gesetzt, dann gibt es einen Intensitaetssprung und es muss 
+        geglaettet werden
+        """
+        limitsF = slice(0,idxF)
+        limitsG = slice(idxF, None)
+        
         Sim[key] = pl.hstack((Sim[key][:,limitsF], Sim[keyG][:,limitsG]))
         Sim.pop(keyG)
 
@@ -118,7 +128,8 @@ for key in fit:
         pass
     else:
         lines[label] = pl.plot(fitE[key], fit[key]+k[R], 
-                               lw=2*TUBAF.width(ps), color=color)[0]
+                               # lw=2*TUBAF.width(ps), 
+                               color=color, marker='.')[0]
     
 for R in ExpFunc:
     # plot experiment
@@ -142,14 +153,14 @@ pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 pl.xlabel('Energy [eV]', fontsize=18)
 pl.ylabel('Intensity [a. u.]', fontsize=18)
 for R in Reflections:
-    pl.text(8160, .6+k[R], R)
+    pl.text(8175, 0.95+k[R], R)
 
 # border line FDM--Green
 pl.plot([edge+cut,edge+cut], [-1, 105], color='gray', lw=2*TUBAF.width(ps), linestyle='--')
-pl.text(edge+cut+5.5, 4.15, 'Green', fontsize=16, color='0.33')
-pl.arrow(edge+cut+6, 4.12, 25, 0., head_width=0.035, head_length=5, fc='gray', ec='gray')
-pl.text(edge+cut-30, 4.15, 'FDM', fontsize=16, color='0.33')
-pl.arrow(edge+cut-6, 4.12, -25, 0., head_width=0.035, head_length=5, fc='gray', ec='gray')
+pl.text(edge+cut+5.5, 2*4.15, 'Green', fontsize=16, color='0.33')
+pl.arrow(edge+cut+6, 2*4.12, 25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
+pl.text(edge+cut-30, 2*4.15, 'FDM', fontsize=16, color='0.33')
+pl.arrow(edge+cut-6, 2*4.12, -25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
  
 pl.savefig('dafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()
