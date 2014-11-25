@@ -48,23 +48,25 @@ for R in Reflections:
     Sim.update(get_sim(R, Reflections, edge))
 
 dE = get_dE(Sim.keys())
-
+for key in Sim:
+    Sim[key][0] += dE[key] # Energy correction
 # Daten beschneiden und zusammenfuehren
 idx = {}
 for key in Sim.keys():
     if not "FDM" in key:
         continue
-    Sim[key][0] += dE[key] # Energy correction
-    R = key.split('_')[-1]
-    idx = idx_cut_energy(edge, cut, Sim[key][0], shift[R])
     if "mod" in key:
         continue
         #limits = slice(0,-1)
+    R = key.split('_')[-1]
     if "FDM" in key:
-        limitsF = slice(0,idx)
-        limitsG = slice(idx, None)
         keyG = key.replace("FDM", "Green")
-        Sim[key] = pl.hstack((Sim[key][:,limitsF], Sim[keyG][:,limitsG]))
+        idxF = Sim[key][0] <= (edge + cut)
+        idxG = Sim[keyG][0] > (edge + cut)
+        for i in [1,2]:
+            ratio = Sim[keyG][i,idxG][0] / Sim[key][i,~idxF][0]
+            Sim[keyG][i,idxG] /= ratio
+        Sim[key] = pl.hstack((Sim[key][:,idxF], Sim[keyG][:,idxG]))
         Sim.pop(keyG)
 
 for key in Sim.keys():
