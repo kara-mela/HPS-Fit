@@ -24,11 +24,7 @@ edge = 8071
 cut = 45
 E_lim = slice(0, 350) # only L3 edge
 
-#myvars = ["m", "n", "c"]
 myvars = ["n", "m"]
-
-shift = collections.defaultdict(int)
-shift["001"] = -23.5
 
 Reflections = {"301" : "608", 
                "sat" : "-215", 
@@ -51,12 +47,12 @@ dE = get_dE(Sim.keys())
 
 # Daten beschneiden und zusammenfuehren
 for key in Sim.keys():
+    R = key.split('_')[-1]
     if not "FDM" in key:
         continue
-    Sim[key][0] += -dE[key] + shift[key] # Energy correction
+    Sim[key][0] += -dE[key] # Energy correction
     if "mod" in key:
         continue
-    R = key.split('_')[-1]
     
     keyG = key.replace("FDM", "Green")
     idxF = Sim[key][0] <= (edge + cut)
@@ -85,10 +81,6 @@ for key in Sim:
     
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, myvars, 
                              fitalg="simplex")
-    
-    # if "sat" in key and "D1" in key:
-        # print "   sat-Parameter:", fit_para[key].popt["m"], 
-          # fit_para[key].popt["n"], fit_para[key].popt["c"]
     
     fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
@@ -122,7 +114,7 @@ for key in fit:
     
 for R in ExpFunc:
     # plot experiment
-    lines["Experiment"] = pl.plot(ExpFunc[R].x+shift[R], 
+    lines["Experiment"] = pl.plot(ExpFunc[R].x, 
                                   ExpFunc[R].y+k[R], '.k')[0]
 
 # test

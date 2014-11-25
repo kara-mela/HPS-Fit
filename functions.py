@@ -20,7 +20,8 @@ def get_exp(R, DIR = os.curdir, norm=None, crop=None):
     if crop==None:
         crop = slice(None,None)
     flist = os.listdir(DIR)
-    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R), flist)
+    # fname = filter(lambda s: s.startswith("dafs_hps_%s"%R) and s.endswith("_corr.dat"), flist)
+    fname = filter(lambda s: s.startswith("dafs_hps_%s"%R) and s.endswith("_enec.dat"), flist)
     assert len(fname) == 1, "More than 1 file found."
     fname = fname[0]
     data = et.loaddat(fname, todict=True, comment='')
