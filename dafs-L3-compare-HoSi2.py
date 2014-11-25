@@ -50,16 +50,15 @@ for R in Reflections:
 dE = get_dE(Sim.keys())
 
 for key in Sim:
-    Sim[key][0] += dE[key] # Energy correction
+    Sim[key][0] += dE[key] + shift[key] # Energy correction
+
 # Daten beschneiden und zusammenfuehren
-idx = {}
 for key in Sim.keys():
     if not "FDM" in key:
         continue
     Sim[key][0] += dE[key] # Energy correction
     if "mod" in key:
         continue
-        #limits = slice(0,-1)
     R = key.split('_')[-1]
     
     keyG = key.replace("FDM", "Green")
