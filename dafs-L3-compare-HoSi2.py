@@ -23,18 +23,19 @@ def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
 edge = 8071
 cut = 45
 E_lim = slice(0, 350) # only L3 edge
+fact=1.6
 
 myvars = ["n", "m"]
 
-Reflections = {"301" : "608", 
-               "sat" : "-215", 
+Reflections = {"sat" : "-215", 
                "110" : "220", 
-               "001" : "008"}
+               "001" : "008",
+               "301" : "608"}
 
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
-k = dict(zip(Reflections.keys(), 2*pl.arange(len(Reflections))))
+k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
 
 
 # load data
@@ -89,6 +90,7 @@ for key in Sim:
 # Plot fit results
 print("plotting...")
 f = pl.figure(figsize=(5,10))
+# f = pl.figure(figsize=(10,20))
 lines = {}
 for key in fit:
     R = key.split('_')[2]
@@ -118,7 +120,7 @@ for R in ExpFunc:
                                   ExpFunc[R].y+k[R], '.k')[0]
 
 # test
-pl.ylim([-0.1,2*4.3])
+pl.ylim([-0.1,fact*4.3])
 pl.xlim([8025,8199])
 
 my_legend = pl.legend(lines.values(), lines.keys(), 
@@ -138,10 +140,10 @@ for R in Reflections:
 
 # border line FDM--Green
 pl.plot([edge+cut,edge+cut], [-1, 105], color='gray', lw=2*TUBAF.width(ps), linestyle='--')
-pl.text(edge+cut+5.5, 2*4.15, 'Green', fontsize=16, color='0.33')
-pl.arrow(edge+cut+6, 2*4.12, 25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
-pl.text(edge+cut-30, 2*4.15, 'FDM', fontsize=16, color='0.33')
-pl.arrow(edge+cut-6, 2*4.12, -25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
+pl.text(edge+cut+5.5, fact*4.15, 'Green', fontsize=16, color='0.33')
+pl.arrow(edge+cut+6, fact*4.12, 25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
+pl.text(edge+cut-30, fact*4.15, 'FDM', fontsize=16, color='0.33')
+pl.arrow(edge+cut-6, fact*4.12, -25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
  
 pl.savefig('dafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()

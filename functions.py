@@ -69,7 +69,8 @@ def get_sim(R, miller, edge):
                 'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
                 'MN-v11_conv.txt'                : 'D1_FDM', 
                 'MN-v16_conv.txt'                : 'D1_FDM', 
-                'modulated-L23-conv_out_conv.txt': 'mod_Green'}
+                # 'modulated-L23-conv_out_conv.txt': 'mod_Green'
+                'mod-L3-conv_out.txt': 'mod_Green'}
     result = {}
     for simfile in Models:
         key = "_".join([Models[simfile], R])
