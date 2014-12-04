@@ -46,9 +46,9 @@ def loadDAFS(path, ref="xanes", corrected=0, absorption=False,
         
         I = 0
         if pol in ["sigma", "mixed"]:
-            I =+ data[colss]
+            I += data[colss]
         if pol in ["pi", "mixed"]:
-            I =+ data[colss]
+            I += data[colsp]
         
         if absorption:
             colA = "A(%s)"%ref

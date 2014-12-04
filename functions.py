@@ -75,8 +75,8 @@ def get_sim(R, miller, edge):
     for simfile in Models:
         key = "_".join([Models[simfile], R])
         
-        #useabs = R=="sat"
-        useabs = True
+        useabs = R=="sat"
+        # useabs = True
         Ref = miller[R] if not ("HS_" in Models[simfile]) else R
         
         try:

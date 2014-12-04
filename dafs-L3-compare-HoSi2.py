@@ -75,16 +75,34 @@ for key in Sim.keys():
 # Fitten
 fit_para, fit = {}, {}
 fitE = {}
+# don't forget the satellite with c=1 and c=2
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
     
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, myvars, 
+    print key
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
+                             # myvars + ["c"] * (R=="sat"), 
+                             myvars + ["c"], 
                              fitalg="simplex")
+    print fit_para[key].popt["c"]
     
     fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
+    
+    if ("D1" in key or "mod" in key) and "sat" in key:
+        nkey = key + "_c1"
+        fit_para[nkey] = fit_para[key]
+        fit_para[nkey].popt['c'] = 1.
+        fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        fitE[nkey] = E
+        
+        nkey = key + "_c2"
+        fit_para[nkey] = fit_para[key]
+        fit_para[nkey].popt['c'] = 2.
+        fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        fitE[nkey] = E
 
 #----------------------------------------------------------
 # Plot fit results
@@ -106,13 +124,19 @@ for key in fit:
     elif "HS" in key:
         color = TUBAF.blau(ps)
         label = "HoSi$_2$"
+    if "c1" in key:
+        ls = ':'
+    elif "c2" in key:
+        ls = '--'
+    else:
+        ls = '-'
     
     # plot simulations
     if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
         pass
     else:
         lines[label] = pl.plot(fitE[key], fit[key]+k[R], 
-                               lw=2*TUBAF.width(ps), color=color)[0]
+                  lw=2*TUBAF.width(ps), color=color, ls=ls)[0]
     
 for R in ExpFunc:
     # plot experiment
