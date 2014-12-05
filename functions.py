@@ -62,15 +62,18 @@ def get_sim(R, miller, edge):
         loading data from files
         first rough norming to mean()
     """
-    Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
-                'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
-                'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
-                'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
-                'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
-                'MN-v11_conv.txt'                : 'D1_FDM', 
-                'MN-v16_conv.txt'                : 'D1_FDM', 
-                # 'modulated-L23-conv_out_conv.txt': 'mod_Green'
-                'mod-L3-conv_out.txt': 'mod_Green'}
+    Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green',   # 0.50
+                'A-L23-new-all-conv_out_conv.txt': 'A_FDM',     # 0.50
+                'D1-L23-Green-conv_out_conv.txt' : 'D1_Green',  # 0.50
+                'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green',  # 0.50
+                'HoSi2-conv_out_conv.txt'        : 'HS_FDM',    # 0.50
+                # 'MN-v11_conv.txt'                : 'D1_FDM',    # 4.52
+                # 'MN-v16_conv.txt'                : 'D1_FDM',    # 4.52
+                'D1-L23-conv_conv.txt'           : 'D1_FDM',    # correct gamma_hole, only one file for D1_FDM
+                # 'modulated-L23-conv_out_conv.txt': 'mod_Green' # some energies starting at 24.4eV
+                # 'mod-L3-conv_out.txt'            : 'mod_Green'  # 4.52, wrong gamma_hole
+                'mod-L23-oldstyle_conv_out.txt'  : 'mod_Green'
+                }
     result = {}
     for simfile in Models:
         key = "_".join([Models[simfile], R])
