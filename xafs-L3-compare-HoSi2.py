@@ -7,6 +7,7 @@ XAFS sim_col: 1
 
 from scipy.optimize import curve_fit, leastsq, fmin
 from scipy.interpolate import interp1d
+from matplotlib.ticker import FixedLocator, MultipleLocator
 import pylab as pl
 from itertools import product
 from kara_tools import TUBAF
@@ -16,7 +17,7 @@ ps = 'TUBAF'
 simplex = False
 
 from matplotlib import rc
-rc('font', **{'size':16})
+rc('font', **{'size':14})
 
 def Icorr(E, m, n, I):
     return (m*(E-E[0]) + n) * I
@@ -38,9 +39,11 @@ cut = 45
 data, energy, xafs, fit_para, fit = {}, {}, {}, {}, {}
 
 # load data
-data["mod"] = pl.loadtxt("modulated-L23-conv_out_conv.txt", skiprows=1)
+# data["mod"] = pl.loadtxt("modulated-L23-conv_out_conv.txt", skiprows=1)
+data["mod"] = pl.loadtxt("mod-L23-oldstyle_conv_out.txt", skiprows=1)
 data["D1_Green"] = pl.loadtxt("D1-L23-Green-conv_out_conv.txt", skiprows=1)
-data["D1_FDM"] = pl.loadtxt("MN-v11_conv.txt", skiprows=1)
+# data["D1_FDM"] = pl.loadtxt("MN-v11_conv.txt", skiprows=1)
+data["D1_FDM"] = pl.loadtxt("D1-L23-conv_conv.txt", skiprows=1)
 data["A_Green"] = pl.loadtxt("A-L23-Green-conv_out_conv.txt", skiprows=1)
 data["A_FDM"] = pl.loadtxt("A-L23-new-all-conv_out_conv.txt", skiprows=1)
 data["HS_Green"] = pl.loadtxt("HoSi2-Green-conv_out_conv.txt", skiprows=1)
@@ -69,9 +72,17 @@ header, content = [], []
 for key in fit_para:
     print fit_para[key]
     m, n, dE = fit_para[key]
+    
+    dE -= 1.
+    fit_para[key][2] -= 1.
+    
     fit[key] = Icorr(energy[key], m, n, xafs[key])
     header.append(key)
-    content.append(dE)
+    if "mod" in key:
+        content.append(dE)
+    else:
+        content.append(dE)
+    
 data = dict(zip(header, content))
 et.savedat('fit-para.dat', data, xcol=header[0])
 
@@ -104,36 +115,63 @@ for i in range(len(models)):
 idx["mod"] = 1.
 
 # Plot fit results
-f = pl.figure()
+# f = pl.figure()
+f, ax = pl.subplots()
 for key in fit: 
     if "FDM" not in key:
         print key, ps
         if "mod" in key:
-            color = TUBAF.gruen(ps)
+            color = TUBAF.color(ps)['g']
+            label = 'model mod'
         elif "D1" in key:
-            color = TUBAF.rot(ps)
+            color = TUBAF.color(ps)['r']
+            label = 'model $D_1$'
         elif "A" in key:
-            color = TUBAF.orange(ps)
+            color = TUBAF.color(ps)['o']
+            label = 'model $A$'
         elif "HS" in key:
-            color = TUBAF.blau(ps)
+            color = TUBAF.color(ps)['b']
+            label = 'HoSi$_2$'
     
-        label = key.split('_')[0]
+        # label = 'model ' + key.split('_')[0]
 
-        pl.plot(energy[key] - fit_para[key][2], fit[key], label=label, lw=2*TUBAF.width(ps), color=color)
+        pl.plot(energy[key] - fit_para[key][2], fit[key], label=label, lw=TUBAF.width(ps), color=color)
 pl.plot(en_exp, exp_norm, label='Experiment', color='black', marker='.')
 
 pl.ylim([-0.05,1.07])
-pl.xlim([8025,8199])
-pl.legend(loc=2, prop={'size':12})
-pl.xlabel('Energy [eV]', fontsize=18)
-pl.ylabel('Intensity [a. u.]', fontsize=18)
+pl.xlim([8040,8160])
+ax.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
+
+pl.legend(bbox_to_anchor=(1., .93),
+           ncol=1, prop={'size':14})
+
+pl.xlabel('Energy (eV)', fontsize=16)
+pl.ylabel('Intensity (a. u.)', fontsize=16)
+
+# oscillation labels
+def plot_markers(ax):
+    # feature markers
+    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$']#, '$C_4$', '$C_5$']
+    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8103, 8138])#, 8167, 8192])
+    for i in range(4):
+        for line in range(len(my_labels)):  
+            if i == 0:
+                if line == 0 or line == 6:
+                    pl.text(my_energies[line]-6, 1.02, my_labels[line], fontsize=16)
+                else:
+                    pl.text(my_energies[line]+.8, 1.02, my_labels[line], fontsize=16)
+            
+            pl.plot([my_energies[line],my_energies[line]], [-1, 105], 
+                     color='gray', lw=TUBAF.width(ps), linestyle='--')
+
+plot_markers(ax)
 
 # border line FDM--Green
-pl.plot([edge+cut,edge+cut], [-1, 105], color='gray', lw=2*TUBAF.width(ps), linestyle='--')
-pl.text(edge+cut+5.5, 1., 'Green', fontsize=16, color='0.33')
-pl.arrow(edge+cut+6, .97, 15, 0., head_width=0.02, head_length=5, fc='0.33', ec='0.33')
-pl.text(edge+cut-20, 1., 'FDM', fontsize=16, color='0.33')
-pl.arrow(edge+cut-6, .97, -15, 0., head_width=0.02, head_length=5, fc='0.33', ec='0.33')
+pl.plot([edge+cut,edge+cut], [-1, 105], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
+pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
+pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
  
 pl.savefig('xafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()

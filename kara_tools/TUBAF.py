@@ -36,9 +36,9 @@ def gelb(style='TUBAF'):
 
 def width(style='TUBAF'):
     if style=='TUBAF':
-        return 1.5
+        return 2
     else:
-        return 1
+        return 1.5
         
 def name(style='TUBAF'):
     if style=='TUBAF':

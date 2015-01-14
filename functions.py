@@ -9,7 +9,7 @@ import collections
 Simulation = collections.namedtuple("Sim", ["E", "Dafs", "Abs"])
 
 def get_dE(keys):
-    dE_xafs = et.loaddat('fit-para_enec.dat', todict=True, comment='#')
+    dE_xafs = et.loaddat('fit-para.dat', todict=True, comment='#')
     dE = {}
     for idx, key in product(dE_xafs, keys):
         if idx.split('_')[0] in key and idx.split('_')[-1] in key:
@@ -56,7 +56,6 @@ def patching(fit_F, fit_G, idx_F, idx_G, e_F, e_G):
     e_G = np.hstack((e_F[0:idx_F], e_G[idx_G:-1]))
     return fit_G, e_G
     
-
 def get_sim(R, miller, edge):
     """
         loading data from files
@@ -67,16 +66,20 @@ def get_sim(R, miller, edge):
                 'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
                 'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
                 'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
-                'MN-v11_conv.txt'                : 'D1_FDM', 
-                'MN-v16_conv.txt'                : 'D1_FDM', 
-                # 'modulated-L23-conv_out_conv.txt': 'mod_Green'
-                'mod-L3-conv_out.txt': 'mod_Green'}
+                #
+                # 'MN-v11_conv.txt'                : 'D1_FDM', 
+                # 'MN-v16_conv.txt'                : 'D1_FDM', 
+                'D1-L23-conv_conv.txt'           : 'D1_FDM',
+                # 'modulated-L23-conv_out_conv.txt': 'mod_Green',
+                # 'mod-L3-conv_out.txt': 'mod_Green'
+                'mod-L23-oldstyle_conv_out.txt'  : 'mod_Green'
+                }
     result = {}
     for simfile in Models:
         key = "_".join([Models[simfile], R])
         
-        useabs = R=="sat"
-        # useabs = True
+        # useabs = R=="sat"
+        useabs = True
         Ref = miller[R] if not ("HS_" in Models[simfile]) else R
         
         try:

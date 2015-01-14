@@ -11,6 +11,7 @@ import collections
 import evaluationtools as et
 from kara_tools import TUBAF
 from functions import *
+from matplotlib.ticker import FixedLocator, MultipleLocator
 
 MultipleLocator = pl.matplotlib.ticker.MultipleLocator
 
@@ -23,7 +24,7 @@ def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
 edge = 8071
 cut = 45
 E_lim = slice(0, 350) # only L3 edge
-fact=1.6
+fact=2
 
 myvars = ["n", "m"]
 
@@ -35,8 +36,15 @@ Reflections = {"sat" : "-215",
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
-k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
-
+# k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
+# k = {"sat" : 3.7,
+     # "110" : 2.7,
+     # "001" : 2.,
+     # "301" : 0.}
+k = {"sat" : 0.,
+     "110" : 2.,
+     "001" : 3.3,
+     "301" : 4.1}
 
 # load data
 print("loading data...")
@@ -83,8 +91,8 @@ for key in Sim:
     
     print key
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
-                             # myvars + ["c"] * (R=="sat"), 
-                             myvars + ["c"], 
+                             myvars + ["c"] * (R=="sat"), 
+                             # myvars + ["c"], 
                              fitalg="simplex")
     print fit_para[key].popt["c"]
     
@@ -107,22 +115,22 @@ for key in Sim:
 #----------------------------------------------------------
 # Plot fit results
 print("plotting...")
-f = pl.figure(figsize=(5,10))
+f = pl.figure(figsize=(7,14))
 # f = pl.figure(figsize=(10,20))
 lines = {}
 for key in fit:
     R = key.split('_')[2]
     if "mod" in key:
-        color = TUBAF.gruen(ps)
+        color = TUBAF.color(ps)['g']
         label = "model mod"
     elif "D1" in key:
-        color = TUBAF.rot(ps)
-        label = "model D1"
+        color = TUBAF.color(ps)['r']
+        label = "model $D_1$"
     elif "A" in key:
-        color = TUBAF.orange(ps)
-        label = "model A"
+        color = TUBAF.color(ps)['o']
+        label = "model $A$"
     elif "HS" in key:
-        color = TUBAF.blau(ps)
+        color = TUBAF.color(ps)['b']
         label = "HoSi$_2$"
     if "c1" in key:
         ls = ':'
@@ -134,40 +142,46 @@ for key in fit:
     # plot simulations
     if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
         pass
+    elif "c1" in key or "c2" in key:
+        pl.plot(fitE[key], fit[key]+k[R], 
+                  lw=TUBAF.width(ps), color=color, ls=ls)[0]
     else:
         lines[label] = pl.plot(fitE[key], fit[key]+k[R], 
-                  lw=2*TUBAF.width(ps), color=color, ls=ls)[0]
+                  lw=TUBAF.width(ps), color=color, ls=ls)[0]
     
 for R in ExpFunc:
     # plot experiment
     lines["Experiment"] = pl.plot(ExpFunc[R].x, 
-                                  ExpFunc[R].y+k[R], '.k')[0]
+                                  ExpFunc[R].y+k[R], marker='.', color='black')[0]
 
 # test
-pl.ylim([-0.1,fact*4.3])
-pl.xlim([8025,8199])
+# pl.ylim([-0.1,fact*4.3])
+pl.ylim([-0.1,6.2])
+pl.xlim([8040,8160])
 
+# my_legend = pl.legend(lines.values(), lines.keys(), 
+                      # bbox_to_anchor=(0., 1.005, 1., .065), loc=3, ncol=2, 
+                      # mode="expand", borderaxespad=0., prop={'size':12})
 my_legend = pl.legend(lines.values(), lines.keys(), 
-                      bbox_to_anchor=(0., 1.005, 1., .065), loc=3, ncol=2, 
-                      mode="expand", borderaxespad=0., prop={'size':14})
+                      bbox_to_anchor=(1., .4), ncol=1, prop={'size':14})
+# pl.legend(lines.values(), lines.keys(), loc=1, prop={'size':14})
 
 # distances of ticks on axes
-pl.axes().xaxis.set_major_locator(MultipleLocator(50))
-pl.axes().xaxis.set_minor_locator(MultipleLocator(25))
+pl.axes().xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
 pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 
 # labels
-pl.xlabel('Energy [eV]', fontsize=18)
-pl.ylabel('Intensity [a. u.]', fontsize=18)
+pl.xlabel('Energy (eV)', fontsize=16)
+pl.ylabel('Intensity (a. u.)', fontsize=16)
 for R in Reflections:
-    pl.text(8175, 0.95+k[R], R)
+    pl.text(8150, 0.95+k[R], R)
 
 # border line FDM--Green
-pl.plot([edge+cut,edge+cut], [-1, 105], color='gray', lw=2*TUBAF.width(ps), linestyle='--')
-pl.text(edge+cut+5.5, fact*4.15, 'Green', fontsize=16, color='0.33')
-pl.arrow(edge+cut+6, fact*4.12, 25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
-pl.text(edge+cut-30, fact*4.15, 'FDM', fontsize=16, color='0.33')
-pl.arrow(edge+cut-6, fact*4.12, -25, 0., head_width=0.05, head_length=5, fc='gray', ec='gray')
+pl.plot([edge+cut,edge+cut], [-1, 105], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
+pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
+pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
  
 pl.savefig('dafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()
