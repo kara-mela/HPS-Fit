@@ -15,14 +15,14 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 
 MultipleLocator = pl.matplotlib.ticker.MultipleLocator
 
-ps = 'TUBAF'
+ps = 'TUBA'
 pl.matplotlib.rc('font', **{'size':14})
 
 def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
     return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
     
 edge = 8071
-cut = 45
+cut = 42
 E_lim = slice(0, 350) # only L3 edge
 fact=2
 
@@ -92,7 +92,7 @@ for key in Sim:
     print key
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
                              myvars + ["c"] * (R=="sat"), 
-                             # myvars + ["c"], 
+                             # myvars + ["c"] * 1, 
                              fitalg="simplex")
     print fit_para[key].popt["c"]
     

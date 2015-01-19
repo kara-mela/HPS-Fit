@@ -10,10 +10,11 @@ from scipy.interpolate import interp1d
 from matplotlib.ticker import FixedLocator, MultipleLocator
 import pylab as pl
 from itertools import product
+import numpy as np
 from kara_tools import TUBAF
 import evaluationtools as et
 
-ps = 'TUBAF'
+ps = 'TUBAss'
 simplex = False
 
 from matplotlib import rc
@@ -34,22 +35,19 @@ def sim_cut(key, edge, cut, dE):
     return max(( idx for idx in range(len(energy[key])) if (energy[key][idx] < edge + cut + dE)), key=lambda idx: idx)
 
 edge = 8071
-cut = 45
+cut = 42
 
 data, energy, xafs, fit_para, fit = {}, {}, {}, {}, {}
 
 # load data
-# data["mod"] = pl.loadtxt("modulated-L23-conv_out_conv.txt", skiprows=1)
-data["mod"] = pl.loadtxt("mod-L23-oldstyle_conv_out.txt", skiprows=1)
+data["mod"] = pl.loadtxt("mod-conv-EF125_out.txt", skiprows=1)
 data["D1_Green"] = pl.loadtxt("D1-L23-Green-conv_out_conv.txt", skiprows=1)
-# data["D1_FDM"] = pl.loadtxt("MN-v11_conv.txt", skiprows=1)
-data["D1_FDM"] = pl.loadtxt("D1-L23-conv_conv.txt", skiprows=1)
+data["D1_FDM"] = pl.loadtxt("D1-L23-EF125-conv_conv.txt", skiprows=1)
 data["A_Green"] = pl.loadtxt("A-L23-Green-conv_out_conv.txt", skiprows=1)
-data["A_FDM"] = pl.loadtxt("A-L23-new-all-conv_out_conv.txt", skiprows=1)
+data["A_FDM"] = pl.loadtxt("A-L23-conv-EF125_out_conv.txt", skiprows=1)
 data["HS_Green"] = pl.loadtxt("HoSi2-Green-conv_out_conv.txt", skiprows=1)
-data["HS_FDM"] = pl.loadtxt("HoSi2-conv_out_conv.txt", skiprows=1)
+data["HS_FDM"] = pl.loadtxt("HoSi2-EF125-conv_out_conv.txt", skiprows=1)
 exp_data = pl.loadtxt("dafs_hps_sat_psi1_t1_corr.dat", skiprows=1)
-# exp_data = pl.loadtxt("dafs_hps_110_ho_r1_corr_enec.dat", skiprows=1)
 
 # energy
 for key in data:
@@ -89,8 +87,10 @@ et.savedat('fit-para.dat', data, xcol=header[0])
 # norming
 for key in fit: 
     # fit[key] /= max(fit[key])
-    fit[key] = (fit[key] - min(fit[key]))/(max(fit[key]) - min(fit[key]))
-exp_norm = (Exp(en_exp) - Exp(en_exp[:284]).min())/(Exp(en_exp[:284]).max() - Exp(en_exp[:284]).min())
+    fit[key] = (fit[key] - min(fit[key]))/(np.median(fit[key]) - min(fit[key]))
+# exp_norm = (Exp(en_exp) - Exp(en_exp[:284]).min())/(Exp(np.median(en_exp[60:284])) - Exp(en_exp[:284]).min())
+exp_norm = (Exp(en_exp) - Exp(en_exp[:135]).min())/(Exp(np.median(en_exp[60:135])) - Exp(en_exp[:135]).min())
+# # # exp_norm /= np.median(exp_norm)
 
 # cut
 idx = {}
@@ -138,11 +138,11 @@ for key in fit:
         pl.plot(energy[key] - fit_para[key][2], fit[key], label=label, lw=TUBAF.width(ps), color=color)
 pl.plot(en_exp, exp_norm, label='Experiment', color='black', marker='.')
 
-pl.ylim([-0.05,1.07])
+pl.ylim([-0.05,3.1])
 pl.xlim([8040,8160])
 ax.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
 
-pl.legend(bbox_to_anchor=(1., .93),
+pl.legend(bbox_to_anchor=(1., .8),
            ncol=1, prop={'size':14})
 
 pl.xlabel('Energy (eV)', fontsize=16)
@@ -151,27 +151,27 @@ pl.ylabel('Intensity (a. u.)', fontsize=16)
 # oscillation labels
 def plot_markers(ax):
     # feature markers
-    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$']#, '$C_4$', '$C_5$']
-    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8103, 8138])#, 8167, 8192])
+    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']#, '$C_5$', '$C_6$']
+    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8084.8, 8103, 8138])#, 8167, 8192])
     for i in range(4):
         for line in range(len(my_labels)):  
             if i == 0:
                 if line == 0 or line == 6:
-                    pl.text(my_energies[line]-6, 1.02, my_labels[line], fontsize=16)
+                    pl.text(my_energies[line]-6, 2.9, my_labels[line], fontsize=16)
                 else:
-                    pl.text(my_energies[line]+.8, 1.02, my_labels[line], fontsize=16)
+                    pl.text(my_energies[line]+.8, 2.9, my_labels[line], fontsize=16)
             
             pl.plot([my_energies[line],my_energies[line]], [-1, 105], 
-                     color='gray', lw=TUBAF.width(ps), linestyle='--')
+                     color='gray', lw=0.5*TUBAF.width(ps), linestyle='--')
 
 plot_markers(ax)
 
 # border line FDM--Green
 pl.plot([edge+cut,edge+cut], [-1, 105], color='.75', lw=TUBAF.width(ps), linestyle='-.')
 pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
-pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+pl.arrow(edge+cut+2, .02, 7, 0., head_width=0.03, head_length=3, fc='.75', ec='.75')
 pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
-pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+pl.arrow(edge+cut-2, .02, -7, 0., head_width=0.03, head_length=3, fc='.75', ec='.75')
  
 pl.savefig('xafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()

@@ -17,10 +17,10 @@ import os
 from matplotlib import rc
 rc('font', **{'size':12})
 
-ps = 'TUBAF'
+ps = 'TUBA'
 
-edge = 8071 + 4 
-cut  = 45
+edge = 8071 #+ 4 
+cut  = 42
 
 def sort_mod(data):
     """
@@ -234,23 +234,15 @@ ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.8),arrowprops=dict(arrowst
 ax["3"].annotate('(a)', xy=(8056,0.7), xytext=(8043,6.6),arrowprops=dict(arrowstyle="->"), size=12)
 ax["3"].annotate('(b)', xy=(8057,1.7), xytext=(8043,8.4),arrowprops=dict(arrowstyle="->"), size=12)
 
-# base = 3.5
-# fact = 0.7
-# ax["2"].text(8161, base+3*fact, '(d)', fontsize=11, color=TUBAF.color(ps)['r'])
-# ax["2"].text(8161, base+1*fact, '(c)', fontsize=11, color=TUBAF.color(ps)['r'])
-# ax["2"].text(8161, base-1*fact, '(b)', fontsize=11, color=TUBAF.color(ps)['o'])
-# ax["2"].text(8161, base-3*fact, '(a)', fontsize=11, color=TUBAF.color(ps)['o'])
-# ax["2"].text(8161, base-5*fact, '(a)', fontsize=11, color=TUBAF.color(ps)['b'])
-
 # oscillation labels
 def plot_markers(ax):
     # feature markers
-    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$']#, '$C_4$', '$C_5$']
-    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8103, 8138])#, 8167, 8192])
+    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']#, '$C_5$', '$C_6$']
+    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8084.8, 8103, 8138])#, 8167, 8192])
     for i in range(4):
         for line in range(len(my_labels)):  
             if i == 0:
-                if line == 0 or line == 6:
+                if line == 0 or line == 7 or line == 4:
                     ax[str(i)].text(my_energies[line]-6, 7.9, my_labels[line], fontsize=16)
                 else:
                     ax[str(i)].text(my_energies[line]+.2, 7.9, my_labels[line], fontsize=16)
@@ -260,12 +252,15 @@ def plot_markers(ax):
 plot_markers(ax)
 
 
-# # # border line FDM--Green
-# # pl.plot([edge+cut,edge+cut], [-1, 105], color='gray', lw=TUBAF.width(ps), linestyle='--')
-# # pl.text(edge+cut+5.5, 1., 'Green', fontsize=14, color='0.33')
-# # pl.arrow(edge+cut+5, .97, 10, 0., head_width=0.02, head_length=5, fc='0.33', ec='0.33')
-# # pl.text(edge+cut-13, 1., 'FDM', fontsize=14, color='0.33')
-# # pl.arrow(edge+cut-5, .97, -10, 0., head_width=0.02, head_length=5, fc='0.33', ec='0.33')
+# border line FDM--Green
+ax["0"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["1"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["2"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["3"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["0"].text(edge+cut+1.5, 7.9, 'Green', fontsize=14, color='.75')
+ax["0"].arrow(edge+cut+2, 7.4, 8, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
+ax["0"].text(edge+cut-9, 7.9, 'FDM', fontsize=14, color='.75')
+ax["0"].arrow(edge+cut-2., 7.4, -5, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
  
 
 pl.savefig('DOS-compare-Hosi2-' + TUBAF.name(ps) + '.pdf', transparent=True)

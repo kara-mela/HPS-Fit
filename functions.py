@@ -61,18 +61,13 @@ def get_sim(R, miller, edge):
         loading data from files
         first rough norming to mean()
     """
-    Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green', 
-                'A-L23-new-all-conv_out_conv.txt': 'A_FDM', 
+    Models   = {'A-L23-Green-conv_out_conv.txt'  : 'A_Green',  
+                'A-L23-conv-EF125_out_conv.txt'  : 'A_FDM', 
                 'D1-L23-Green-conv_out_conv.txt' : 'D1_Green', 
                 'HoSi2-Green-conv_out_conv.txt'  : 'HS_Green', 
-                'HoSi2-conv_out_conv.txt'        : 'HS_FDM', 
-                #
-                # 'MN-v11_conv.txt'                : 'D1_FDM', 
-                # 'MN-v16_conv.txt'                : 'D1_FDM', 
-                'D1-L23-conv_conv.txt'           : 'D1_FDM',
-                # 'modulated-L23-conv_out_conv.txt': 'mod_Green',
-                # 'mod-L3-conv_out.txt': 'mod_Green'
-                'mod-L23-oldstyle_conv_out.txt'  : 'mod_Green'
+                'HoSi2-EF125-conv_out_conv.txt'  : 'HS_FDM', 
+                'D1-L23-EF125-conv_conv.txt'     : 'D1_FDM',
+                'mod-conv-EF125_out.txt'         : 'mod_Green'
                 }
     result = {}
     for simfile in Models:
