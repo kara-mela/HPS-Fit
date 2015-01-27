@@ -10,7 +10,7 @@ import pylab as pl
 import collections
 import evaluationtools as et
 from kara_tools import TUBAF
-from functions import *
+from kara_tools import functions as f
 from matplotlib.ticker import FixedLocator, MultipleLocator
 
 MultipleLocator = pl.matplotlib.ticker.MultipleLocator
@@ -18,20 +18,17 @@ MultipleLocator = pl.matplotlib.ticker.MultipleLocator
 ps = 'TUBA'
 pl.matplotlib.rc('font', **{'size':14})
 
-def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
-    return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
-    
-edge = 8071
+edge = 24365
 cut = 42
-E_lim = slice(0, 350) # only L3 edge
-fact=2
+E_lim = slice(0, -1)
+fact=1.
 
 myvars = ["n", "m"]
 
-Reflections = {"sat" : "-215", 
-               "110" : "220", 
-               "001" : "008",
+Reflections = {"001" : "008",
                "301" : "608"}
+# Reflections = {"001" : "001",
+               # "301" : "301"}
 
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
@@ -45,37 +42,21 @@ k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
 # load data
 print("loading data...")
 for R in Reflections:
-    ExpFunc[R] = get_exp(R, norm="mean", crop=E_lim)
-    Sim.update(get_sim(R, Reflections, edge))
+    ExpFunc[R] = f.get_exp(R, end="", norm="mean", crop=E_lim)
+    Sim.update(f.get_sim(R, Reflections, edge, symbol="K"))
 
-dE = get_dE(Sim.keys())
+print Sim.keys()
 
-# Daten beschneiden und zusammenfuehren
-for key in Sim.keys():
-    R = key.split('_')[-1]
-    if not "FDM" in key:
-        continue
-    Sim[key][0] += -dE[key] # Energy correction
-    if "mod" in key:
-        continue
-    
-    keyG = key.replace("FDM", "Green")
-    idxF = Sim[key][0] <= (edge + cut)
-    idxG = Sim[keyG][0] > (edge + cut)
-    for i in [1,2]:
-        ratio = Sim[keyG][i,idxG][0] / Sim[key][i,~idxF][0]
-        Sim[keyG][i,idxG] /= ratio
-    Sim[key] = pl.hstack((Sim[key][:,idxF], Sim[keyG][:,idxG]))
-    Sim.pop(keyG)
+dE = f.get_dE(Sim.keys())
 
 for key in Sim.keys():
     if Sim[key][1].max() < 1e-10:
+        print key
         Sim.pop(key) # No Intensity
     else:
         Sim[key][1] /= Sim[key][1].mean() # normalize
         Sim[key][2] /= Sim[key][2].mean()
-
-
+        
 # Fitten
 fit_para, fit = {}, {}
 fitE = {}
@@ -86,26 +67,26 @@ for key in Sim:
     p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
     
     print key
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), f.Icorr, p0, 
                              myvars + ["c"] * (R=="sat"), 
                              # myvars + ["c"] * 1, 
                              fitalg="simplex")
     print fit_para[key].popt["c"]
     
-    fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
+    fit[key] = f.Icorr(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
     
     if ("D1" in key or "mod" in key) and "sat" in key:
         nkey = key + "_c1"
         fit_para[nkey] = fit_para[key]
         fit_para[nkey].popt['c'] = 1.
-        fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
         fitE[nkey] = E
         
         nkey = key + "_c2"
         fit_para[nkey] = fit_para[key]
         fit_para[nkey].popt['c'] = 2.
-        fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
         fitE[nkey] = E
 
 #----------------------------------------------------------
@@ -150,34 +131,33 @@ for R in ExpFunc:
     lines["Experiment"] = pl.plot(ExpFunc[R].x, 
                                   ExpFunc[R].y+k[R], marker='.', color='black')[0]
 
-# test
-pl.ylim([-0.1,fact*4.3])
-# pl.ylim([-0.1,6.2])
-pl.xlim([8040,8160])
+# pl.ylim([-0.1,fact*4.3])
+pl.ylim([-0.05,2.6])
+pl.xlim([24310,24549])
 
 # my_legend = pl.legend(lines.values(), lines.keys(), 
                       # bbox_to_anchor=(0., 1.005, 1., .065), loc=3, ncol=2, 
                       # mode="expand", borderaxespad=0., prop={'size':12})
-my_legend = pl.legend(lines.values(), lines.keys(), 
-                      bbox_to_anchor=(1., .4), ncol=1, prop={'size':14})
-# pl.legend(lines.values(), lines.keys(), loc=1, prop={'size':14})
+# my_legend = pl.legend(lines.values(), lines.keys(), 
+                      # bbox_to_anchor=(1., .4), ncol=1, prop={'size':14})
+pl.legend(lines.values(), lines.keys(), loc=4, prop={'size':14})
 
 # distances of ticks on axes
-pl.axes().xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
+# # pl.axes().xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
+# # pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 
 # labels
 pl.xlabel('Energy (eV)', fontsize=16)
 pl.ylabel('Intensity (a. u.)', fontsize=16)
 for R in Reflections:
-    pl.text(8150, 0.95+k[R], R)
+    pl.text(edge + 150, 0.95+k[R], R)
 
 # border line FDM--Green
-pl.plot([edge+cut,edge+cut], [-1, 105], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
-pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
-pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
-pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+# # # # pl.plot([edge+cut,edge+cut], [-1, 20], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+# # # # pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
+# # # # pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
+# # # # pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
+# # # # pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
  
-pl.savefig('dafs-compare-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
+pl.savefig('dafs-compare-K-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()

@@ -4,7 +4,7 @@ def width(style='TUBAF'):
     if style=='TUBAF':
         return 2
     else:
-        return 2
+        return 1.5
         
 def name(style='TUBAF'):
     if style=='TUBAF':

@@ -19,8 +19,8 @@ rc('font', **{'size':12})
 
 ps = 'TUBA'
 
-edge = 8071 #+ 4 
-cut  = 42
+edge = 8071 + 4 
+cut  = 42-4
 
 def sort_mod(data):
     """
@@ -167,6 +167,36 @@ ax["1"] = pl.subplot(gs[1], sharex=ax["0"])
 ax["2"] = pl.subplot(gs[2], sharex=ax["0"])
 ax["3"] = pl.subplot(gs[3], sharex=ax["0"])
 
+
+# oscillation labels
+def plot_markers(ax):
+    # feature markers
+    my_labels =             ['$B_1$', '$B_2$', '$B_3$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']#, '$C_5$', '$C_6$']
+    my_energies = pl.array( [ 8044.9, 8061.45,  8065.3,  8074.6,  8084.0,  8103.0,  8138.0])#, 8167, 8192])
+    for i in range(4):
+        for line in range(len(my_labels)):  
+            if i == 0:
+                if line == 1 or line == 8 or line == 5:
+                    ax[str(i)].text(my_energies[line]-6, 7.9, my_labels[line], fontsize=16)
+                else:
+                    ax[str(i)].text(my_energies[line]+.2, 7.9, my_labels[line], fontsize=16)
+            
+            ax[str(i)].plot([my_energies[line],my_energies[line]], [-1, 105], color='gray', lw=TUBAF.width(ps), linestyle='--')
+
+plot_markers(ax)
+
+
+# border line FDM--Green
+ax["0"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["1"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["2"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["3"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
+ax["0"].text(edge+cut+1.5, 7.9, 'Green', fontsize=14, color='.75')
+ax["0"].arrow(edge+cut+2, 7.4, 8, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
+ax["0"].text(edge+cut-9, 7.9, 'FDM', fontsize=14, color='.75')
+ax["0"].arrow(edge+cut-2., 7.4, -5, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
+
+
 for key in s.keys():
     if 'HoSi2' in key:
         mycolor = TUBAF.color(ps)['b']
@@ -228,40 +258,11 @@ ax["2"].set_ylabel('$d$-state', fontsize=14)
 ax["3"].set_ylabel('$f$-state', fontsize=14)
 
 # curve labels
-ax["2"].annotate('(d)', xy=(8057,3.7), xytext=(8043,8.4),arrowprops=dict(arrowstyle="->"), size=12)
-ax["2"].annotate('(c)', xy=(8056,2.7), xytext=(8043,6.6),arrowprops=dict(arrowstyle="->"), size=12)
-ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.8),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
-ax["3"].annotate('(a)', xy=(8056,0.7), xytext=(8043,6.6),arrowprops=dict(arrowstyle="->"), size=12)
-ax["3"].annotate('(b)', xy=(8057,1.7), xytext=(8043,8.4),arrowprops=dict(arrowstyle="->"), size=12)
-
-# oscillation labels
-def plot_markers(ax):
-    # feature markers
-    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']#, '$C_5$', '$C_6$']
-    my_energies = pl.array( [8061.4, 8065.3, 8074.6, 8084.8, 8103, 8138])#, 8167, 8192])
-    for i in range(4):
-        for line in range(len(my_labels)):  
-            if i == 0:
-                if line == 0 or line == 7 or line == 4:
-                    ax[str(i)].text(my_energies[line]-6, 7.9, my_labels[line], fontsize=16)
-                else:
-                    ax[str(i)].text(my_energies[line]+.2, 7.9, my_labels[line], fontsize=16)
-            
-            ax[str(i)].plot([my_energies[line],my_energies[line]], [-1, 105], color='gray', lw=TUBAF.width(ps), linestyle='--')
-
-plot_markers(ax)
-
-
-# border line FDM--Green
-ax["0"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-ax["1"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-ax["2"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-ax["3"].plot([edge+cut,edge+cut], [-1, 10], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-ax["0"].text(edge+cut+1.5, 7.9, 'Green', fontsize=14, color='.75')
-ax["0"].arrow(edge+cut+2, 7.4, 8, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
-ax["0"].text(edge+cut-9, 7.9, 'FDM', fontsize=14, color='.75')
-ax["0"].arrow(edge+cut-2., 7.4, -5, 0., head_width=0.4, head_length=3, fc='.75', ec='.75')
- 
+ax["2"].annotate('(d)', xy=(8057,3.7), xytext=(8043,8.275),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["2"].annotate('(c)', xy=(8056,2.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.675),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["3"].annotate('(a)', xy=(8056,0.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["3"].annotate('(b)', xy=(8057,1.7), xytext=(8043,8.275),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 
 pl.savefig('DOS-compare-Hosi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 
