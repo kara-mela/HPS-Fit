@@ -16,12 +16,12 @@ import os
 # import kara_tools import functions as kf
 
 from matplotlib import rc
-rc('font', **{'size':12})
+rc('font', **{'size':14})
 
 ps = 'TUBA'
 
-edge = 24370
-plot_shift = 16 # shift of features depending on chosen exp
+edge = 24370 - 4.5
+plot_shift = 16 - 4.5# shift of features depending on chosen exp
 
 s, p, d, f, energy = f.get_data(edge)
 
@@ -40,7 +40,8 @@ ax["2"] = pl.subplot(gs[2], sharex=ax["0"])
 def plot_markers(ax):
     # feature markers
     my_labels =             [ '$B$', '$C_1$', '$C_2$', '$C_3$', '$C_4$', '$C_5$']
-    my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
+    # my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
+    my_energies = pl.array( [24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
     my_energies *= 1000
     my_energies += plot_shift
     for i in range(3):
@@ -85,9 +86,9 @@ for key in s.keys():
 
 # scaling
 ax["0"].set_ylim(-0.5,4.3)
-ax["0"].yaxis.set_major_locator(MultipleLocator(2))
+# ax["0"].yaxis.set_major_locator(MultipleLocator(2))
 ax["1"].set_ylim(-0.5,4.3)
-ax["1"].yaxis.set_major_locator(MultipleLocator(2))
+# ax["1"].yaxis.set_major_locator(MultipleLocator(2))
 ax["2"].set_ylim(-0.5,4.3)
 pl.xlim([24310,24549])
 ax["0"].xaxis.set_major_locator(FixedLocator((24350, 24400, 24450, 24500)))
@@ -115,6 +116,9 @@ ax["1"].set_ylabel('$p$-state', fontsize=14)
 ax["2"].set_ylabel('$d$-state', fontsize=14)
 
 # curve labels
+"""
+the environments of Fig. 3 are NOT Pd-environments!!!
+"""
 # ax["2"].annotate('(d)', xy=(8057,3.7), xytext=(8043,8.275),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 # ax["2"].annotate('(c)', xy=(8056,2.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 # ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.675),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')

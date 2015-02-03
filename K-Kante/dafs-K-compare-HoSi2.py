@@ -27,25 +27,18 @@ myvars = ["n", "m"]
 
 Reflections = {"001" : "008",
                "301" : "608"}
-# Reflections = {"001" : "001",
-               # "301" : "301"}
 
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
 k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
-# k = {"sat" : 0.,
-     # "110" : 1.5,
-     # "001" : 3.,
-     # "301" : 4.5}
+
 
 # load data
 print("loading data...")
 for R in Reflections:
     ExpFunc[R] = f.get_exp(R, end="", norm="mean", crop=E_lim)
     Sim.update(f.get_sim(R, Reflections, edge, symbol="K"))
-
-print Sim.keys()
 
 dE = f.get_dE(Sim.keys())
 
@@ -65,8 +58,7 @@ for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
-    
-    print key
+
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), f.Icorr, p0, 
                              myvars + ["c"] * (R=="sat"), 
                              # myvars + ["c"] * 1, 
@@ -89,10 +81,12 @@ for key in Sim:
         fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
         fitE[nkey] = E
 
+f.make_fit_dat(fit_para, name='dafs')
+
 #----------------------------------------------------------
 # Plot fit results
 print("plotting...")
-f = pl.figure(figsize=(7,14))
+f = pl.figure(figsize=(7,7))
 # f = pl.figure(figsize=(10,20))
 lines = {}
 for key in fit:
@@ -135,29 +129,13 @@ for R in ExpFunc:
 pl.ylim([-0.05,2.6])
 pl.xlim([24310,24549])
 
-# my_legend = pl.legend(lines.values(), lines.keys(), 
-                      # bbox_to_anchor=(0., 1.005, 1., .065), loc=3, ncol=2, 
-                      # mode="expand", borderaxespad=0., prop={'size':12})
-# my_legend = pl.legend(lines.values(), lines.keys(), 
-                      # bbox_to_anchor=(1., .4), ncol=1, prop={'size':14})
 pl.legend(lines.values(), lines.keys(), loc=4, prop={'size':14})
-
-# distances of ticks on axes
-# # pl.axes().xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-# # pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
 
 # labels
 pl.xlabel('Energy (eV)', fontsize=16)
 pl.ylabel('Intensity (a. u.)', fontsize=16)
 for R in Reflections:
     pl.text(edge + 150, 0.95+k[R], R)
-
-# border line FDM--Green
-# # # # pl.plot([edge+cut,edge+cut], [-1, 20], color='.75', lw=TUBAF.width(ps), linestyle='-.')
-# # # # pl.text(edge+cut+1.5, .05, 'Green', fontsize=14, color='.75')
-# # # # pl.arrow(edge+cut+2, .02, 5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
-# # # # pl.text(edge+cut-9, .05, 'FDM', fontsize=14, color='.75')
-# # # # pl.arrow(edge+cut-2, .02, -5, 0., head_width=0.02, head_length=5, fc='.75', ec='.75')
  
 pl.savefig('dafs-compare-K-HoSi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 pl.show()

@@ -1,4 +1,3 @@
-
 """
 data manipulation (adding, norming, ...) and plotting
 substance: Ho2PdSi3
@@ -16,18 +15,6 @@ from kara_tools import TUBAF
 from kara_tools import functions as f
 import evaluationtools as et
 
-
-def r_value(exp, sim):
-    """
-    reference: http://reference.iucr.org/dictionary/R_factor
-    problem of unequal x-axis: different zeroes, different steps
-    """
-    r = sum(abs(exp - sim)) / sum(abs(sim))
-    return r
-
-
-
-
 ps = 'TUBA'
 simplex = False
 
@@ -35,7 +22,7 @@ from matplotlib import rc
 rc('font', **{'size':14})
 
 edge = 24365
-plot_shift = 16 # shift of features depending on chosen exp
+plot_shift = 16 - 4.5 # shift of features depending on chosen exp
 
 myvars = ["n", "m", "dE"]
 
@@ -45,7 +32,6 @@ data, energy, xafs, fit_para, fit, fitE = {}, {}, {}, {}, {}, {}
 exp_data    = pl.loadtxt('dafs_hps_fluo_pd.dat', skiprows=1)
 data['A']   = pl.loadtxt('A-K_conv_out_conv.txt', skiprows=1) 
 data['D1']  = pl.loadtxt('D1-K_conv_out_conv.txt', skiprows=1)
-# data['mod'] = pl.loadtxt('mod-K_conv_out.txt', skiprows=1)
 data['mod'] = pl.loadtxt('mod-K_out_conv.txt', skiprows=1)
 
 # energy
@@ -56,6 +42,9 @@ en_exp = exp_data[:,0]
 Exp = interp1d(en_exp, exp_data[:,1], kind='linear') # Energy, flutot
 
 for key in xafs.keys():
+    """
+    'deleting' sets without intensity
+    """
     if xafs[key].max() < 1e-10:
         xafs.pop(key) # No Intensity
     else:
@@ -63,14 +52,12 @@ for key in xafs.keys():
 
 # fit
 print "m, n, dE"
-header, content = [], []
 for key in xafs:
     p0 = dict(m=0.0, n=1., c=0., dE=0., Exp=Exp, Isim=xafs[key])
     fit_para[key] = et.fitls(energy[key], pl.zeros(len(energy[key])), 
                          f.Icorr, p0, myvars, fitalg="simplex")
     print fit_para[key].popt["c"]
-
-# for key in fit_para:
+    
     m, n, dE = fit_para[key].popt["m"], fit_para[key].popt["n"], fit_para[key].popt["dE"]
     print m, n, dE
     
@@ -80,29 +67,25 @@ for key in xafs:
     
     fit[key] = f.Icorr(energy[key], diff=False, **fit_para[key].popt)
     fitE[key] = energy[key]
-    
-    header.append(key)
-    if "mod" in key:
-        content.append(dE)
-    else:
-        content.append(dE)
-    
-data = dict(zip(header, content))
-et.savedat('fit-para.dat', data, xcol=header[0])
+
+f.make_fit_dat(fit_para)
 
 # norming
 for key in fit: 
     fit[key] = (fit[key] - min(fit[key]))/(np.mean(fit[key][:]) - min(fit[key]))
 exp_norm = (Exp(en_exp) - Exp(en_exp[50:]).min())/(np.mean(Exp(en_exp[:450])) - Exp(en_exp[50:]).min())
 
+
+
+
 # Plot fit results
-ax1 = pl.axes([.1, .1, .8, .8])
 
 # oscillation labels
 def plot_markers(ax):
     # feature markers
     my_labels =             [ '$B$', '$C_1$', '$C_2$', '$C_3$', '$C_4$', '$C_5$']
-    my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
+    # my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
+    my_energies = pl.array( [24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
     my_energies *= 1000
     my_energies += plot_shift
     for i in range(4):
@@ -112,8 +95,6 @@ def plot_markers(ax):
             
             pl.plot([my_energies[line],my_energies[line]], [-1, 20], 
                      color='gray', lw=0.5*TUBAF.width(ps), linestyle='--')
-
-plot_markers(ax1)
 
 def my_plot(ax, fit):
     for key in fit: 
@@ -135,6 +116,11 @@ def my_plot(ax, fit):
                  label=label, lw=TUBAF.width(ps), color=color)
     ax.plot(en_exp, exp_norm, label='Experiment', color='black', marker='.')
 
+
+ax1 = pl.axes([.1, .1, .8, .8])
+
+plot_markers(ax1)
+
 my_plot(ax1, fit)
     
 pl.ylim([-0.05,1.95])
@@ -151,95 +137,26 @@ pl.ylabel('Intensity (a. u.)', fontsize=16)
 
 
 
-# ############## inset preedge
-# ax2 = pl.axes([0.115,0.475,0.18,0.3], axisbg='white')
+# ############## inset pd environment
+import matplotlib.image as mpimg
+ax2 = pl.axes([0.515,0.3,0.32,0.32], axisbg='white')
+img = mpimg.imread('Pd-environ-cl.png')
+ax2.imshow(img)
 
-# plot_markers(ax2)
 
-# my_plot(ax2, fit)
+pl.setp(ax2.get_xticklabels(), visible=False)
+pl.setp(ax2.get_yticklabels(), visible=False)
 
-# pl.setp(ax2.get_xticklabels(), visible=False)
-# pl.setp(ax2.get_yticklabels(), visible=False)
+ax2.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
+ax2.yaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
 
-# ax2.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-# ax2.yaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-
-# ax2.get_xaxis().get_major_formatter().set_useOffset(False)
-# ax2.get_yaxis().get_major_formatter().set_useOffset(False)
-
-# # limits2 = [8059.5, 8068.7, -0.01, 0.45]
-# limits2 = [8061, 8071.5, -0.01, 0.49]
-# pl.xlim([limits2[0],limits2[1]])
-# pl.ylim([limits2[2],limits2[3]])
+ax2.get_xaxis().get_major_formatter().set_useOffset(False)
+ax2.get_yaxis().get_major_formatter().set_useOffset(False)
 
 # c = TUBAF.color('TUBAF')['r']
 # for axis in ['left', 'bottom', 'right', 'top']:
     # ax2.spines[axis].set_color(c)
     # ax2.spines[axis].set_lw(0.7*TUBAF.width(ps))
-
-# def draw_box(ax, limits):
-    # """
-    # limits = [x1, y1, x2, y2]
-    # """
-    # x1, x2, y1, y2 = limits
-    # ax.plot([x1,x1], [y1,y2], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
-    # ax.plot([x2,x2], [y1,y2], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
-    # ax.plot([x1,x2], [y1,y1], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
-    # ax.plot([x1,x2], [y2,y2], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
-
-# draw_box(ax1, limits2)
-
-# ax1.annotate("",
-            # xy=(8052, 1.44), xycoords='data',
-            # xytext=(limits2[0], limits2[3]), textcoords='data',
-            # arrowprops=dict(arrowstyle="->",
-                            # connectionstyle="arc3",
-                            # facecolor=c,
-                            # edgecolor=c,
-                            # linewidth=0.7*TUBAF.width(ps)), 
-            # )
-
-
-
-
-
-
-# ############# inset postedge
-# ax3 = pl.axes([0.45,0.475,0.18,0.3])
-# my_plot(ax3, fit)
-
-# pl.setp(ax3.get_xticklabels(), visible=False)
-# pl.setp(ax3.get_yticklabels(), visible=False)
-
-# ax3.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-# ax3.yaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-
-# ax3.get_xaxis().get_major_formatter().set_useOffset(False)
-# ax3.get_yaxis().get_major_formatter().set_useOffset(False)
-
-# # limits3 = [8079.5, 8090, 0.85, 1.35]
-# limits3 = [8082.3, 8092.8, 0.9, 1.4]
-# pl.xlim([limits3[0],limits3[1]])
-# pl.ylim([limits3[2],limits3[3]])
-
-# c = TUBAF.color('TUBAF')['r']
-# for axis in ['left', 'bottom', 'right', 'top']:
-    # ax3.spines[axis].set_color(c)
-    # ax3.spines[axis].set_lw(0.7*TUBAF.width(ps))
-
-# plot_markers(ax3)
-
-# draw_box(ax1, limits3)
-
-# ax1.annotate("",
-            # xy=(8100, 1.44), xycoords='data',
-            # xytext=(limits3[1], limits3[3]-0.3), textcoords='data',
-            # arrowprops=dict(arrowstyle="->",
-                            # connectionstyle="arc3",
-                            # facecolor=c,
-                            # edgecolor=c,
-                            # linewidth=0.7*TUBAF.width(ps)), 
-            # )
 
 
 
