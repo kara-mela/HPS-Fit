@@ -16,7 +16,7 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 
 MultipleLocator = pl.matplotlib.ticker.MultipleLocator
 
-ps = 'TUBA'
+ps = 'TUBAF'
 pl.matplotlib.rc('font', **{'size':14})
 
 # def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
@@ -109,6 +109,8 @@ for key in Sim:
         fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
         fitE[nkey] = E
 
+f.make_fit_dat(fit_para, name='dafs')
+        
 #----------------------------------------------------------
 # Plot fit results
 print("plotting...")

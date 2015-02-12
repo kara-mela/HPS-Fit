@@ -15,7 +15,7 @@ from kara_tools import TUBAF
 from kara_tools import functions as f
 import evaluationtools as et
 
-ps = 'TUBA'
+ps = 'TUBAF'
 simplex = False
 
 from matplotlib import rc
@@ -25,10 +25,14 @@ def sim_cut(key, edge, cut, dE):
     # return the index of the biggest energy that is still smaller, than edge + cut
     return max(( idx for idx in range(len(energy[key])) if (energy[key][idx] < edge + cut + dE)), key=lambda idx: idx)
 
-def draw_box(ax, limits):
+def draw_box(ax, limits, ps):
     """
     limits = [x1, y1, x2, y2]
     """
+    if ps == 'TUBAF':
+        c = 'black'
+    else:
+        c = TUBAF.color(ps)['r']
     x1, x2, y1, y2 = limits
     ax.plot([x1,x1], [y1,y2], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
     ax.plot([x2,x2], [y1,y2], color=c, lw=0.7*TUBAF.width(ps), linestyle='-')
@@ -207,12 +211,16 @@ limits2 = [8061, 8071.5, -0.01, 0.49]
 pl.xlim([limits2[0],limits2[1]])
 pl.ylim([limits2[2],limits2[3]])
 
-c = TUBAF.color('TUBAF')['r']
+
+if ps == 'TUBAF':
+    c = 'black'
+else:
+    c = TUBAF.color('TUBAF')['r']
 for axis in ['left', 'bottom', 'right', 'top']:
     ax2.spines[axis].set_color(c)
-    ax2.spines[axis].set_lw(0.7*TUBAF.width(ps))
+    ax2.spines[axis].set_lw(0.6*TUBAF.width(ps))
 
-draw_box(ax1, limits2)
+draw_box(ax1, limits2, ps)
 
 ax1.annotate("",
             # xy=(8052, 1.44), xycoords='data',
@@ -249,14 +257,17 @@ limits3 = [8082.3, 8092.8, 0.9, 1.4]
 pl.xlim([limits3[0],limits3[1]])
 pl.ylim([limits3[2],limits3[3]])
 
-c = TUBAF.color('TUBAF')['r']
+if ps == 'TUBAF':
+    c = 'black'
+else:
+    c = TUBAF.color('TUBAF')['r']
 for axis in ['left', 'bottom', 'right', 'top']:
     ax3.spines[axis].set_color(c)
-    ax3.spines[axis].set_lw(0.7*TUBAF.width(ps))
+    ax3.spines[axis].set_lw(0.6*TUBAF.width(ps))
 
 plot_markers(ax3)
 
-draw_box(ax1, limits3)
+draw_box(ax1, limits3, ps)
 
 ax1.annotate("",
             # xy=(8100, 1.44), xycoords='data',

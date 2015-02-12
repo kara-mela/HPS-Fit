@@ -18,7 +18,7 @@ import os
 from matplotlib import rc
 rc('font', **{'size':14})
 
-ps = 'TUBA'
+ps = 'TUBAF'
 
 edge = 24370 - 4.5
 plot_shift = 16 - 4.5# shift of features depending on chosen exp

@@ -15,7 +15,7 @@ from kara_tools import TUBAF
 from kara_tools import functions as f
 import evaluationtools as et
 
-ps = 'TUBA'
+ps = 'TUBAF'
 simplex = False
 
 from matplotlib import rc
@@ -137,26 +137,26 @@ pl.ylabel('Intensity (a. u.)', fontsize=16)
 
 
 
-# ############## inset pd environment
-import matplotlib.image as mpimg
-ax2 = pl.axes([0.515,0.3,0.32,0.32], axisbg='white')
-img = mpimg.imread('Pd-environ-cl.png')
-ax2.imshow(img)
+# # ############## inset pd environment
+# import matplotlib.image as mpimg
+# ax2 = pl.axes([0.515,0.3,0.32,0.32], axisbg='white')
+# img = mpimg.imread('Pd-environ-cl.png')
+# ax2.imshow(img)
 
 
-pl.setp(ax2.get_xticklabels(), visible=False)
-pl.setp(ax2.get_yticklabels(), visible=False)
+# pl.setp(ax2.get_xticklabels(), visible=False)
+# pl.setp(ax2.get_yticklabels(), visible=False)
 
-ax2.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-ax2.yaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
+# ax2.xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
+# ax2.yaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
 
-ax2.get_xaxis().get_major_formatter().set_useOffset(False)
-ax2.get_yaxis().get_major_formatter().set_useOffset(False)
+# ax2.get_xaxis().get_major_formatter().set_useOffset(False)
+# ax2.get_yaxis().get_major_formatter().set_useOffset(False)
 
-# c = TUBAF.color('TUBAF')['r']
-# for axis in ['left', 'bottom', 'right', 'top']:
-    # ax2.spines[axis].set_color(c)
-    # ax2.spines[axis].set_lw(0.7*TUBAF.width(ps))
+# # c = TUBAF.color('TUBAF')['r']
+# # for axis in ['left', 'bottom', 'right', 'top']:
+    # # ax2.spines[axis].set_color(c)
+    # # ax2.spines[axis].set_lw(0.7*TUBAF.width(ps))
 
 
 

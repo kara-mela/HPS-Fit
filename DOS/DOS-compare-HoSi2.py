@@ -17,7 +17,7 @@ import os
 from matplotlib import rc
 rc('font', **{'size':14})
 
-ps = 'TUBA'
+ps = 'TUBAF'
 
 edge = 8071 + 4 
 cut  = 42-4
@@ -210,20 +210,20 @@ for key in s.keys():
     
     # Legende basteln!!!
     if 'HoSi2' in key:
-        ax["0"].plot(energy[key], s[key], label='HoSi$_2$', color=mycolor, lw=.5*TUBAF.width(ps))
+        ax["0"].plot(energy[key], s[key], label='HoSi$_2$', color=mycolor, lw=TUBAF.width(ps))
     elif 'A' in key and '2' in key:
-        ax["0"].plot(energy[key], s[key], label='model $A$', color=mycolor, lw=.5*TUBAF.width(ps))
+        ax["0"].plot(energy[key], s[key], label='model $A$', color=mycolor, lw=TUBAF.width(ps))
     elif 'D1' in key and '2' in key:
-        ax["0"].plot(energy[key], s[key], label='model $D_1$', color=mycolor, lw=.5*TUBAF.width(ps))
+        ax["0"].plot(energy[key], s[key], label='model $D_1$', color=mycolor, lw=TUBAF.width(ps))
     elif 'mod' in key:
-        ax["0"].plot(energy[key], s[key], label='model mod', color=mycolor, lw=.5*TUBAF.width(ps))
+        ax["0"].plot(energy[key], s[key], label='model mod', color=mycolor, lw=TUBAF.width(ps))
     else:
-        ax["0"].plot(energy[key], s[key], color=mycolor, lw=.5*TUBAF.width(ps))
+        ax["0"].plot(energy[key], s[key], color=mycolor, lw=TUBAF.width(ps))
     
-    ax["0"].plot(energy[key], s[key], color=mycolor, lw=.5*TUBAF.width(ps))
-    ax["1"].plot(energy[key], p[key], color=mycolor, lw=.5*TUBAF.width(ps))
-    ax["2"].plot(energy[key], d[key], color=mycolor, lw=.5*TUBAF.width(ps))
-    ax["3"].plot(energy[key], f[key], color=mycolor, lw=.5*TUBAF.width(ps))
+    ax["0"].plot(energy[key], s[key], color=mycolor, lw=TUBAF.width(ps))
+    ax["1"].plot(energy[key], p[key], color=mycolor, lw=TUBAF.width(ps))
+    ax["2"].plot(energy[key], d[key], color=mycolor, lw=TUBAF.width(ps))
+    ax["3"].plot(energy[key], f[key], color=mycolor, lw=TUBAF.width(ps))
 
 # scaling
 ax["0"].set_ylim(-0.5,9.9)
