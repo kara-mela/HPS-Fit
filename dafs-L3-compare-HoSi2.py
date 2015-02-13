@@ -5,29 +5,23 @@ edge: L3 (8071eV, X-Ray Data Booklet)
 XAFS sim_col: 1
 """
 
-import os
 import pylab as pl
-import collections
 import evaluationtools as et
 from kara_tools import TUBAF
-# from functions import *
-from kara_tools import functions as f
+from kara_tools import functions as kf
 from matplotlib.ticker import FixedLocator, MultipleLocator
+from evaluationtools import absorption as abs
 
-MultipleLocator = pl.matplotlib.ticker.MultipleLocator
-
-ps = 'TUBAF'
+ps = 'TUBAF' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
 
-# def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
-    # return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
-    
+density = 7.6062541648443736
 edge = 8071 + 6.3
 cut = 42
 E_lim = slice(0, 350) # only L3 edge
-fact=2
+fact=2 # shift of graphs in y
 
-myvars = ["n", "m"]
+myvars = ["n", "m"] # fit parameters
 
 Reflections = {"sat" : "-215", 
                "110" : "220", 
@@ -38,18 +32,14 @@ ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
 k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
-# k = {"sat" : 0.,
-     # "110" : 1.5,
-     # "001" : 3.,
-     # "301" : 4.5}
 
 # load data
 print("loading data...")
 for R in Reflections:
-    ExpFunc[R] = f.get_exp(R, norm="mean", crop=E_lim)
-    Sim.update(f.get_sim(R, Reflections, edge))
+    ExpFunc[R] = kf.get_exp(R, norm="mean", crop=E_lim)
+    Sim.update(kf.get_sim(R, Reflections, edge))
 
-dE = f.get_dE(Sim.keys())
+dE = kf.get_dE(Sim.keys())
 
 # Daten beschneiden und zusammenfuehren
 for key in Sim.keys():
@@ -77,6 +67,27 @@ for key in Sim.keys():
         Sim[key][2] /= Sim[key][2].mean()
 
 
+        
+        
+        
+def Icorr(AbsInst, E, Exp, diff=True, **param):
+    dE = param.pop("dE", 0)
+    return AbsInst.calc_Reflection(**param)  - Exp(E - dE) * diff
+
+HPS = {}
+for key in Sim.keys():
+    HPS[key] = abs.Absorption(
+         composition="Ho2PdSi3", 
+         resatom="Ho", 
+         energy=Sim[key][0], 
+         emission_energy=(2*6719.+6679)/3., # weighted mean of a1 and a2
+         density=density)
+    # HPS[key] = HPS.calc_Reflection() # free omega, m, n -> combi with Icorr...
+    # HPS.guess()
+    ##### for XAFS: HPS.calc_Fluorescence() and free theta_fluo   
+        
+        
+
 # Fitten
 fit_para, fit = {}, {}
 fitE = {}
@@ -84,32 +95,37 @@ fitE = {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
-    p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
-    
+    # p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
+    p0 = dict(m=0.0, n=1., Exp=ExpFunc[R], mu_tot=1./Abs, omega=0,AbsInst=HPS[key])
+    myvars = ["m", "n", "mu_tot", "omega"]
     print key
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), f.Icorr, p0, 
-                             myvars + ["c"] * (R=="sat"), 
-                             # myvars + ["c"] * 1, 
+    # fit_para[key] = et.fitls(E, pl.zeros(len(E)), kf.Icorr, p0, 
+                             # myvars + ["c"] * (R=="sat"), 
+                             # # myvars + ["c"] * 1, 
+                             # fitalg="simplex")
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
+                             myvars, 
                              fitalg="simplex")
     print fit_para[key].popt["c"]
     
-    fit[key] = f.Icorr(E, diff=False, **fit_para[key].popt)
+    # fit[key] = kf.Icorr(E, diff=False, **fit_para[key].popt)
+    fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
     
-    if ("D1" in key or "mod" in key) and "sat" in key:
-        nkey = key + "_c1"
-        fit_para[nkey] = fit_para[key]
-        fit_para[nkey].popt['c'] = 1.
-        fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
-        fitE[nkey] = E
+    # if ("D1" in key or "mod" in key) and "sat" in key:
+        # nkey = key + "_c1"
+        # fit_para[nkey] = fit_para[key]
+        # fit_para[nkey].popt['c'] = 1.
+        # fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        # fitE[nkey] = E
         
-        nkey = key + "_c2"
-        fit_para[nkey] = fit_para[key]
-        fit_para[nkey].popt['c'] = 2.
-        fit[nkey] = f.Icorr(E, diff=False, **fit_para[nkey].popt)
-        fitE[nkey] = E
+        # nkey = key + "_c2"
+        # fit_para[nkey] = fit_para[key]
+        # fit_para[nkey].popt['c'] = 2.
+        # fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
+        # fitE[nkey] = E
 
-f.make_fit_dat(fit_para, name='dafs')
+kf.make_fit_dat(fit_para, name='dafs')
         
 #----------------------------------------------------------
 # Plot fit results
