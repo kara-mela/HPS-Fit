@@ -15,7 +15,7 @@ from kara_tools import TUBAF
 from kara_tools import functions as f
 import evaluationtools as et
 
-ps = 'TUBAF'
+ps = 'TUBA'
 simplex = False
 
 from matplotlib import rc
@@ -83,9 +83,9 @@ exp_norm = (Exp(en_exp) - Exp(en_exp[50:]).min())/(np.mean(Exp(en_exp[:450])) - 
 # oscillation labels
 def plot_markers(ax):
     # feature markers
-    my_labels =             [ '$B$', '$C_1$', '$C_2$', '$C_3$', '$C_4$', '$C_5$']
+    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']
     # my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
-    my_energies = pl.array( [24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
+    my_energies = pl.array( [ 24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
     my_energies *= 1000
     my_energies += plot_shift
     for i in range(4):

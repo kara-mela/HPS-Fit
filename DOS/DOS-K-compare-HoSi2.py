@@ -18,7 +18,7 @@ import os
 from matplotlib import rc
 rc('font', **{'size':14})
 
-ps = 'TUBAF'
+ps = 'TUBA'
 
 edge = 24370 - 4.5
 plot_shift = 16 - 4.5# shift of features depending on chosen exp
@@ -39,15 +39,15 @@ ax["2"] = pl.subplot(gs[2], sharex=ax["0"])
 # oscillation labels
 def plot_markers(ax):
     # feature markers
-    my_labels =             [ '$B$', '$C_1$', '$C_2$', '$C_3$', '$C_4$', '$C_5$']
+    my_labels =             ['$B_1$', '$B_2$', '$C_1$', '$C_2$', '$C_3$', '$C_4$']
     # my_energies = pl.array( [24.346,  24.360,  24.384,  24.423,  24.480, 24.511])
-    my_energies = pl.array( [24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
+    my_energies = pl.array( [ 24.347,  24.363,  24.384,  24.426,  24.483, 24.514])
     my_energies *= 1000
     my_energies += plot_shift
     for i in range(3):
         for line in range(len(my_labels)):  
             if i == 0:
-                if line == 0:
+                if line == 7:
                     ax[str(i)].text(my_energies[line]-10, 3.5, my_labels[line], fontsize=16)
                 else:
                     ax[str(i)].text(my_energies[line]+.2, 3.5, my_labels[line], fontsize=16)

@@ -175,7 +175,7 @@ def get_data(edge, DIR=os.curdir, names=None):
     
     return s, p, d, f, energy
     
-def make_fit_dat(fit_para, name='xafs'):
+def make_fit_dat(fit_para, name='xafs', edge=None):
     """
     creating fit-para.dat
     file containing fit parameter err (and dE from xafs)
@@ -188,12 +188,18 @@ def make_fit_dat(fit_para, name='xafs'):
             dE_line.append(fit_para[key].popt["dE"])
         else:
             dE_line.append(0.0)
-        m.append(fit_para[key].popt["m"])
-        n.append(fit_para[key].popt["n"])
-        omega.append(fit_para[key].popt["omega"])
+        # if edge == 'L':
+            # m.append(fit_para[key].popt["m"])
+            # n.append(fit_para[key].popt["n"])
+            # omega.append(fit_para[key].popt["omega"])
+        # else:
+            # m.append(0.0)
+            # n.append(0.0)
+            # omega.append(0.0)
         err_line.append(fit_para[key].err) #(residuals(fitted_param)**2).sum()/len(x_m) -> mittlere Fehlerquadrate
     
-    content = [err_line, dE_line, m, n, omega]
+    # content = [err_line, dE_line, m, n, omega]
+    content = [err_line, dE_line]
         
     data = dict(zip(header, np.array(content).T))
     et.savedat('fit-para-' + name + '.dat', data, xcol=header[0])
@@ -246,7 +252,7 @@ def feature_marker(ax, labels, pos, height):
     for i in range(3):
         for line in range(len(labels)):  
             if i == 0:
-                ax[str(i)].text(pos[line]+.2, height, labels[line], fontsize=16)
+                ax[str(i)].text(pos[line]+.3, height, labels[line], fontsize=16)
             
             ax[str(i)].plot([pos[line],pos[line]], [-1, 20], color='gray', lw=TUBAF.width(ps), linestyle='--')
 

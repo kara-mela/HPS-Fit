@@ -70,27 +70,16 @@ for key in Sim.keys():
         
         
         
-def Icorr(E, AbsInst, Exp, diff=True, **param):
-    dE = param.pop("dE", 0)
-    return AbsInst.calc_Reflection(**param)  - Exp(E - dE) * diff
-#test
-HPS = {}
-for key in Sim.keys():
-    HPS[key] = ab.Absorption(
-         composition="Ho2PdSi3", 
-         resatom="Ho", 
-         energy=Sim[key][0], 
-         emission_energy=(2*6719.+6679)/3., # weighted mean of a1 and a2
-         density=density)
-    
-    R = key.split("_")[-1]
-    HPS[key].set_Reflection(ExpFunc[R](Sim[key][0]),Sim[key][1])
-    ##### for XAFS: HPS.calc_Fluorescence() and free theta_fluo
+      
 
-theta = {"sat" : 12.9625957428644, # at E = 8075eV
-         "110" : 22.2779615832629, 
-         "001" : 11.0648255327577,
-         "301" : 43.1643687250282}
+def Abs_fit(E, Exp, phi, theta, m, n, mu, d, dE, diff=True):
+    g = pl.sin(phi) / pl.sin(theta)
+    mf = (m*(E-E[0]) + n) * Isim # linear machine function
+    I = mf / (mu + g*mu) * (1 - pl.exp(-d*(mu/pl.sin(phi) + mu/pl.sin(theta)))) - Exp(E - dE) * diff
+    return I
+
+
+        
         
         
         
@@ -100,19 +89,16 @@ fit_para, fit, fitE = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
-    p0 = dict(m=0., n=1., omega=0*pl.pi, 
-              Exp=ExpFunc[R], mu_tot=Abs, AbsInst=HPS[key], theta=theta[R])
-    myvars = ["m", "n", "omega"]
-    print key
-
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
-                             myvars, 
-                             fitalg="simplex")
     
-    fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
+    p0 = dict(m=0., n=1., theta=0.1, phi=0.1, d=5e-4, 
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key])
+    myvars = ["m", "n", "theta", "phi", "d"]
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Abs_fit, p0, 
+                              myvars, fitalg='simplex')
+    fit[key] = Abs_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
-kf.make_fit_dat(fit_para, name='dafs')
+kf.make_fit_dat(fit_para, name='dafs', edge='L')
         
 #----------------------------------------------------------
 # Plot fit results
@@ -150,7 +136,6 @@ for R in ExpFunc:
     lines["Experiment"] = pl.plot(ExpFunc[R].x, 
                                   ExpFunc[R].y+k[R], marker='.', color='black')[0]
 
-# test
 pl.ylim([-0.1,fact*4.3])
 # pl.ylim([-0.1,6.2])
 pl.xlim([8040,8160])
