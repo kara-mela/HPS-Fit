@@ -85,7 +85,12 @@ for key in Sim.keys():
     
     R = key.split("_")[-1]
     HPS[key].set_Reflection(ExpFunc[R](Sim[key][0]),Sim[key][1])
-    ##### for XAFS: HPS.calc_Fluorescence() and free theta_fluo   
+    ##### for XAFS: HPS.calc_Fluorescence() and free theta_fluo
+
+theta = {"sat" : 12.9625957428644, # at E = 8075eV
+         "110" : 22.2779615832629, 
+         "001" : 11.0648255327577,
+         "301" : 43.1643687250282}
         
         
         
@@ -95,8 +100,8 @@ fit_para, fit, fitE = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
-    # p0 = dict(m=0.0, n=1., Exp=ExpFunc[R], mu_tot=1./Abs, omega=2.*pl.pi,AbsInst=HPS[key])
-    p0 = dict(m=0., n=0., Exp=ExpFunc[R], mu_tot=Abs, omega=0*pl.pi,AbsInst=HPS[key])
+    p0 = dict(m=0., n=1., omega=0*pl.pi, 
+              Exp=ExpFunc[R], mu_tot=Abs, AbsInst=HPS[key], theta=theta[R])
     myvars = ["m", "n", "omega"]
     print key
 

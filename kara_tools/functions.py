@@ -16,7 +16,6 @@ def get_dE(keys):
             dE[key] = dE_xafs[idx][1]
     return dE
     
-    
 def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
     return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
