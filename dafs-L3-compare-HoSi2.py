@@ -10,7 +10,7 @@ import evaluationtools as et
 from kara_tools import TUBAF
 from kara_tools import functions as kf
 from matplotlib.ticker import FixedLocator, MultipleLocator
-from evaluationtools import absorption as abs
+from evaluationtools import absorption as ab
 
 ps = 'TUBAF' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
@@ -19,9 +19,9 @@ density = 7.6062541648443736
 edge = 8071 + 6.3
 cut = 42
 E_lim = slice(0, 350) # only L3 edge
-fact=2 # shift of graphs in y
+fact=2 # shift of graphs on y axis
 
-myvars = ["n", "m"] # fit parameters
+# myvars = ["n", "m"] # fit parameters
 
 Reflections = {"sat" : "-215", 
                "110" : "220", 
@@ -70,60 +70,42 @@ for key in Sim.keys():
         
         
         
-def Icorr(AbsInst, E, Exp, diff=True, **param):
+def Icorr(E, AbsInst, Exp, diff=True, **param):
     dE = param.pop("dE", 0)
     return AbsInst.calc_Reflection(**param)  - Exp(E - dE) * diff
 #test
 HPS = {}
 for key in Sim.keys():
-    HPS[key] = abs.Absorption(
+    HPS[key] = ab.Absorption(
          composition="Ho2PdSi3", 
          resatom="Ho", 
          energy=Sim[key][0], 
          emission_energy=(2*6719.+6679)/3., # weighted mean of a1 and a2
          density=density)
-    # HPS[key] = HPS.calc_Reflection() # free omega, m, n -> combi with Icorr...
-    # HPS.guess()
+    
+    R = key.split("_")[-1]
+    HPS[key].set_Reflection(ExpFunc[R](Sim[key][0]),Sim[key][1])
     ##### for XAFS: HPS.calc_Fluorescence() and free theta_fluo   
+        
         
         
 
 # Fitten
-fit_para, fit = {}, {}
-fitE = {}
-# don't forget the satellite with c=1 and c=2
+fit_para, fit, fitE = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
-    # p0 = dict(m=0.0, n=1., c=1., Exp=ExpFunc[R], Isim=Isim, Abs=Abs)
-    p0 = dict(m=0.0, n=1., Exp=ExpFunc[R], mu_tot=1./Abs, omega=0,AbsInst=HPS[key])
-    myvars = ["m", "n", "mu_tot", "omega"]
+    # p0 = dict(m=0.0, n=1., Exp=ExpFunc[R], mu_tot=1./Abs, omega=2.*pl.pi,AbsInst=HPS[key])
+    p0 = dict(m=0., n=0., Exp=ExpFunc[R], mu_tot=Abs, omega=0*pl.pi,AbsInst=HPS[key])
+    myvars = ["m", "n", "omega"]
     print key
-    # fit_para[key] = et.fitls(E, pl.zeros(len(E)), kf.Icorr, p0, 
-                             # myvars + ["c"] * (R=="sat"), 
-                             # # myvars + ["c"] * 1, 
-                             # fitalg="simplex")
+
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Icorr, p0, 
                              myvars, 
                              fitalg="simplex")
-    print fit_para[key].popt["c"]
     
-    # fit[key] = kf.Icorr(E, diff=False, **fit_para[key].popt)
     fit[key] = Icorr(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
-    
-    # if ("D1" in key or "mod" in key) and "sat" in key:
-        # nkey = key + "_c1"
-        # fit_para[nkey] = fit_para[key]
-        # fit_para[nkey].popt['c'] = 1.
-        # fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
-        # fitE[nkey] = E
-        
-        # nkey = key + "_c2"
-        # fit_para[nkey] = fit_para[key]
-        # fit_para[nkey].popt['c'] = 2.
-        # fit[nkey] = Icorr(E, diff=False, **fit_para[nkey].popt)
-        # fitE[nkey] = E
 
 kf.make_fit_dat(fit_para, name='dafs')
         
@@ -147,22 +129,16 @@ for key in fit:
     elif "HS" in key:
         color = TUBAF.color(ps)['b']
         label = "HoSi$_2$"
-    if "c1" in key:
-        ls = ':'
-    elif "c2" in key:
-        ls = '--'
-    else:
-        ls = '-'
     
     # plot simulations
     if ("sat" in key and "A" in key) or ("sat" in key and "HS" in key):
         pass
     elif "c1" in key or "c2" in key:
         pl.plot(fitE[key], fit[key]+k[R], 
-                  lw=TUBAF.width(ps), color=color, ls=ls)[0]
+                  lw=TUBAF.width(ps), color=color)[0]
     else:
         lines[label] = pl.plot(fitE[key], fit[key]+k[R], 
-                  lw=TUBAF.width(ps), color=color, ls=ls)[0]
+                  lw=TUBAF.width(ps), color=color)[0]
     
 for R in ExpFunc:
     # plot experiment

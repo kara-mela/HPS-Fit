@@ -51,7 +51,8 @@ def sort_mod(data):
             dummy.append(data[key])
             data.pop(key, None)
     
-    data['mod_Green'] = sum(dummy)/len(dummy)
+    if len(dummy) != 0:
+        data['mod_Green'] = sum(dummy)/len(dummy)
     
     return data
 
@@ -71,7 +72,7 @@ def sort_D1(data):
     
     return data
 
-def get_data(edge, DIR = os.curdir):
+def get_data(edge, DIR=os.curdir, names=None):
     """
     search directory DIR for DOS-files
     give keys (Green/FDM, model)
@@ -80,18 +81,21 @@ def get_data(edge, DIR = os.curdir):
     """
     
     flist = os.listdir(DIR)
-    if edge < 20000: # Ho L edge
-        fname  = filter(lambda s: s.startswith("HoSi2-new-out")      and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("HoSi2-Green-out")    and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("A-L23-Green-out_")   and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("A-L23-new-all-out_") and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("D1-L3-sat-out-v2_")  and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("D1-L23-Green-out_")  and s.endswith("_sd1.txt"), flist) #
-        fname += filter(lambda s: s.startswith("modulated-L23-out_") and s.endswith("_sd1.txt"), flist) #
-    else: # Pd K edge
-        fname  = filter(lambda s: s.startswith("A-K-out.txt_")       and s.endswith("_sd0.txt"), flist) # HPS-D-K (extern from Matthias
-        fname += filter(lambda s: s.startswith("D1-K-out.txt_")      and s.endswith("_sd0.txt"), flist) # HPS-A-K (extern from Matthias
-        fname += filter(lambda s: s.startswith("mod-K_out_")         and s.endswith("_sd0.txt"), flist) # 594415
+    if names == None:
+        if edge < 20000: # Ho L edge
+            fname  = filter(lambda s: s.startswith("HoSi2-new-out")      and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("HoSi2-Green-out")    and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("A-L23-Green-out_")   and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("A-L23-new-all-out_") and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("D1-L3-sat-out-v2_")  and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("D1-L23-Green-out_")  and s.endswith("_sd1.txt"), flist) #
+            fname += filter(lambda s: s.startswith("modulated-L23-out_") and s.endswith("_sd1.txt"), flist) #
+        else: # Pd K edge
+            fname  = filter(lambda s: s.startswith("A-K-out.txt_")       and s.endswith("_sd0.txt"), flist) # HPS-D-K (extern from Matthias
+            fname += filter(lambda s: s.startswith("D1-K-out.txt_")      and s.endswith("_sd0.txt"), flist) # HPS-A-K (extern from Matthias
+            fname += filter(lambda s: s.startswith("mod-K_out_")         and s.endswith("_sd0.txt"), flist) # 594415
+    else: 
+        fname = names
 
     data = {}
     s, p, d, f = {}, {}, {}, {}
@@ -107,8 +111,12 @@ def get_data(edge, DIR = os.curdir):
             key += 'D1_'
         elif file.startswith('m'):
             key += 'mod_'
+        elif file.startswith('B'):
+            key += 'B_'
+        elif file.startswith('C'):
+            key += 'C_'
         
-        if 'K' in file:
+        if 'K' in file or 'complete' in file:
             pass
         elif 'Green' in file:
             key += 'Green_'
@@ -133,6 +141,16 @@ def get_data(edge, DIR = os.curdir):
     
     for key in data.keys():
         ct = 0.
+        print key
+        
+        if 'B' in key:
+            shift = 0.
+            print 'B'
+        elif 'C' in key:
+            shift = 1.
+            print 'C', shift
+        
+        #hier
         
         if 'HoSi2' in key:
             shift = 0.
@@ -148,9 +166,10 @@ def get_data(edge, DIR = os.curdir):
         s[key] = data[key][:,4]  + shift + int(ct)
         p[key] = data[key][:,12] + shift + int(ct)
         d[key] = data[key][:,24] + shift + int(ct)
-        if edge < 20000:
+        if edge < 20000 and edge > 8000:
             f[key] = data[key][:,40] + shift + int(ct)
-        else: f[key] = None
+        else: 
+            f[key] = None
         
         energy[key] = data[key][:,0]
         energy[key] = np.array(energy[key]) + edge
@@ -163,15 +182,19 @@ def make_fit_dat(fit_para, name='xafs'):
     file containing fit parameter err (and dE from xafs)
     """
     header, dE_line, err_line  = [], [], []
+    m, n, omega = [], [], []
     for key in fit_para:
         header.append(key)
         if name == 'xafs':
             dE_line.append(fit_para[key].popt["dE"])
         else:
             dE_line.append(0.0)
+        m.append(fit_para[key].popt["m"])
+        n.append(fit_para[key].popt["n"])
+        omega.append(fit_para[key].popt["omega"])
         err_line.append(fit_para[key].err) #(residuals(fitted_param)**2).sum()/len(x_m) -> mittlere Fehlerquadrate
     
-    content = [err_line, dE_line]
+    content = [err_line, dE_line, m, n, omega]
         
     data = dict(zip(header, np.array(content).T))
     et.savedat('fit-para-' + name + '.dat', data, xcol=header[0])
@@ -205,7 +228,8 @@ def get_sim(R, miller, edge, symbol="L23"):
         Ref = miller[R] if not ("HS_" in Models[simfile]) else R
         
         try:
-            data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
+            # data = io.FDMNES.loadDAFS(simfile, Ref, absorption=useabs)
+            data = io.FDMNES.loadDAFS(simfile, Ref, absorption=1)
         except ValueError: #not found in this model?
             print("Reflection %s not found in file %s"%(R, simfile))
             continue
@@ -218,3 +242,12 @@ def get_sim(R, miller, edge, symbol="L23"):
                                  data[1], 
                                  Abs))
     return result # Energy, Intensity, Abs
+
+def feature_marker(ax, labels, pos, height):
+    for i in range(3):
+        for line in range(len(labels)):  
+            if i == 0:
+                ax[str(i)].text(pos[line]+.2, height, labels[line], fontsize=16)
+            
+            ax[str(i)].plot([pos[line],pos[line]], [-1, 20], color='gray', lw=TUBAF.width(ps), linestyle='--')
+
