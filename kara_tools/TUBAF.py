@@ -28,7 +28,7 @@ def color(style='TUBAF'):
                        'y' : (0.847, 0.737, 0.239)})
     else:
         colors = dict({'b' : 'orange',
-                       'g' : (0.667, 0.855, 0.000), # bright green
+                       'g' : (0.55, 0.85, 0.000), # (0.667, 0.855, 0.000), # bright green
                        'r' : (0.000, 0.635, 0.910), # bright blue
                        'c' : 'red',
                        'o' : 'blue',

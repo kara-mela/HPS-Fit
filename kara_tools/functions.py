@@ -19,6 +19,17 @@ def get_dE(keys):
 def Icorr(E, Isim, Exp, dE=0, m=0, n=1, c=0., Abs=1, diff=True):
     return (m*(E-E[0]) + n) * Isim / Abs**c  - Exp(E - dE) * diff
 
+def get_theta(R, E):
+    """
+    reflection R
+    energy E in keV
+    """
+    R = pl.array([int(R[0]), int(R[1]), int(R[2])])
+    d = 2*pl.pi()/(sum(R*R)**0.5)
+    lambd = 12.398/E
+    theta = pl.arcsin(lambd/2*d)
+    return theta
+
 def get_exp(R, DIR = os.curdir, end="_enec.dat", norm=None, crop=None):
     if crop==None:
         crop = slice(None,None)
@@ -32,6 +43,8 @@ def get_exp(R, DIR = os.curdir, end="_enec.dat", norm=None, crop=None):
         data["bragg"] /= data["bragg"][crop].mean()
     elif norm=="max":
         data["bragg"] /= data["bragg"][crop].max()
+    if R == "001":
+        data["Energy"] += 3.
     return interpolate.interp1d(data["Energy"], data["bragg"], kind="linear")
 
 def sort_mod(data):

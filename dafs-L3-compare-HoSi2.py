@@ -12,7 +12,7 @@ from kara_tools import functions as kf
 from matplotlib.ticker import FixedLocator, MultipleLocator
 from evaluationtools import absorption as ab
 
-ps = 'TUBAF' # plotstyle
+ps = 'TUBA' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
 
 density = 7.6062541648443736
@@ -31,7 +31,11 @@ Reflections = {"sat" : "-215",
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
-k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
+# k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
+k = {"sat" : 0., 
+     "110" : 1.5, 
+     "001" : 3.,
+     "301" : 4.5}
 
 # load data
 print("loading data...")
@@ -66,23 +70,23 @@ for key in Sim.keys():
         Sim[key][1] /= Sim[key][1].mean() # normalize
         Sim[key][2] /= Sim[key][2].mean()
 
-
-        
-        
-        
-      
-
-def Abs_fit(E, Exp, phi, theta, m, n, mu, d, dE, diff=True):
+def Abs_fit(E, Exp, mu, phi, theta, m=0., n=1., d=pl.inf, dE=0., diff=True):
+    """
+    following Booth2005, equation (1)
+    eps_a = 1
+    mu_a = 1
+    mu_t = mu_f, due to elastical scattering
+    """
     g = pl.sin(phi) / pl.sin(theta)
     mf = (m*(E-E[0]) + n) * Isim # linear machine function
-    I = mf / (mu + g*mu) * (1 - pl.exp(-d*(mu/pl.sin(phi) + mu/pl.sin(theta)))) - Exp(E - dE) * diff
+    I = mf / (mu + g*mu) * (1 - pl.exp(-abs(d*mu*(1./pl.sin(phi) + 1./pl.sin(theta))))) - Exp(E - dE) * diff
     return I
 
-
-        
-        
-        
-        
+theta = { # at E = 8075eV
+         "sat" : 12.9625957428644,
+         "110" : 22.2779615832629, 
+         "001" : 11.0648255327577,
+         "301" : 43.1643687250282}
 
 # Fitten
 fit_para, fit, fitE = {}, {}, {}
@@ -90,11 +94,11 @@ for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     
-    p0 = dict(m=0., n=1., theta=0.1, phi=0.1, d=5e-4, 
+    p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
           Exp=ExpFunc[R], mu=Abs, dE=dE[key])
-    myvars = ["m", "n", "theta", "phi", "d"]
+    myvars = ["m", "n", "theta", "phi"]
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Abs_fit, p0, 
-                              myvars, fitalg='simplex')
+                              myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
     fit[key] = Abs_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
@@ -103,7 +107,7 @@ kf.make_fit_dat(fit_para, name='dafs', edge='L')
 #----------------------------------------------------------
 # Plot fit results
 print("plotting...")
-f = pl.figure(figsize=(7,14))
+f = pl.figure(figsize=(6,10))
 # f = pl.figure(figsize=(10,20))
 lines = {}
 for key in fit:
@@ -136,20 +140,16 @@ for R in ExpFunc:
     lines["Experiment"] = pl.plot(ExpFunc[R].x, 
                                   ExpFunc[R].y+k[R], marker='.', color='black')[0]
 
-pl.ylim([-0.1,fact*4.3])
-# pl.ylim([-0.1,6.2])
+pl.ylim([-0.1,6.7])
 pl.xlim([8040,8160])
 
-# my_legend = pl.legend(lines.values(), lines.keys(), 
-                      # bbox_to_anchor=(0., 1.005, 1., .065), loc=3, ncol=2, 
-                      # mode="expand", borderaxespad=0., prop={'size':12})
 my_legend = pl.legend(lines.values(), lines.keys(), 
-                      bbox_to_anchor=(1., .53), ncol=1, prop={'size':14})
+                      bbox_to_anchor=(1., .81), ncol=1, prop={'size':14})
 # pl.legend(lines.values(), lines.keys(), loc=1, prop={'size':14})
 
 # distances of ticks on axes
 pl.axes().xaxis.set_major_locator(FixedLocator((8050, 8075, 8100, 8125, 8150)))
-pl.axes().yaxis.set_minor_locator(MultipleLocator(0.5))
+pl.axes().yaxis.set_major_locator(MultipleLocator(1.5))
 
 # labels
 pl.xlabel('Energy (eV)', fontsize=16)

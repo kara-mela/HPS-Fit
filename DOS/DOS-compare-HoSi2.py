@@ -17,7 +17,7 @@ import os
 from matplotlib import rc
 rc('font', **{'size':14})
 
-ps = 'TUBAF'
+ps = 'TUBA'
 
 edge = 8071 + 4 
 cut  = 42-4
@@ -114,7 +114,6 @@ def get_data(edge, DIR = os.curdir):
             ct = 1. if int(key.split('_')[-1]) == 1 else 0.
         elif 'mod' in key:
             shift = 1. + 2. + 2.
-        print key, ct
         
         s[key] = data[key][:,4]  + shift + int(ct)
         p[key] = data[key][:,12] + shift + int(ct)
@@ -261,9 +260,9 @@ ax["3"].set_ylabel('$f$-state', fontsize=14)
 # curve labels
 ax["2"].annotate('(d)', xy=(8057,3.7), xytext=(8043,8.275),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 ax["2"].annotate('(c)', xy=(8056,2.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
-ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.675),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
-ax["3"].annotate('(a)', xy=(8056,0.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 ax["3"].annotate('(b)', xy=(8057,1.7), xytext=(8043,8.275),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["3"].annotate('(a)', xy=(8056,0.7), xytext=(8043,6.475),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
+ax["3"].annotate('(a)', xy=(8055,-.3), xytext=(8043,4.675),arrowprops=dict(arrowstyle="->"), size=12, backgroundcolor='white')
 
 pl.savefig('DOS-compare-Hosi2-' + TUBAF.name(ps) + '.pdf', transparent=True)
 
