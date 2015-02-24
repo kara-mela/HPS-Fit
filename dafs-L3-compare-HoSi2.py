@@ -11,6 +11,7 @@ from kara_tools import TUBAF
 from kara_tools import functions as kf
 from matplotlib.ticker import FixedLocator, MultipleLocator
 from evaluationtools import absorption as ab
+from scipy import integrate as si
 
 ps = 'TUBA' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
@@ -88,18 +89,99 @@ theta = { # at E = 8075eV
          "001" : 11.0648255327577,
          "301" : 43.1643687250282}
 
+
+# def func(r, mu, r_exp=0):
+    # return r**r_exp * pl.exp(-mu*r)
+    
+# def Ext_func(lambd, mu, r, c_exp=2, br_exp=2, r_exp=0, sin_exp=1):
+def Ext_func(lambd, mu, c_exp=2, br_exp=2, r_exp=0, sin_exp=1):
+    N = 1.818238e-24
+    e = -1.602176565e-19 # C
+    m = 9.10938291e-31 # kg
+    c = 299792458 # m/s
+    # range = (-pl.infty, pl.infty)
+    # integral = si.nquad(func=Ext_func, ranges=range, args=(mu=mu, r_exp=r_exp))
+    dummy = (N * e**2 / (m * c**c_exp))**br_exp #* lambd**3 / (pl.sin(2*theta)**sin_exp) #* integral
+    return dummy
+
+def Ext_fit(E, Exp, mu, phi, theta, g=100., m=0., n=1., d=pl.inf, dE=0., diff=True):
+    """
+    including correction for extinction following Chandrasekhar1960 http://www.tandfonline.com/doi/pdf/10.1080/00018736000101219
+    http://download.springer.com/static/pdf/22/art%253A10.1007%252FBF01596735.pdf?auth66=1424788392_0d0a37d07b6ae8a6ec2c0da883ef423d&ext=.pdf
+    see also http://journals.iucr.org/q/issues/1961/11/00/a03314/a03314.pdf
+    http://journals.iucr.org/q/issues/1963/11/00/a04006/a04006.pdf
+    
+    g=0 -> no secondary extinction
+    
+    to fit: g, phi, theta, m, n (t_0, gamma_0?)
+    Laue case: t = t_0/pl.cos(theta) -> I = P_0*Q_0*p_1*r*pl.exp(-mu*r)
+    Bragg case: mu*t_0 >> 1:         -> I = P_0*Q_0*p_1/2*mu
+        p_1 = (1 + pl.cos(2*theta)**2)/2.
+        P_0 = S*I_0 (S is cross section of incident beam)
+        Q_0 = abs(N * e**2 * F / (m * c**2)) * lambd**3 / pl.sin(2*theta)
+    
+    arbitrary crystal shape:
+    rho = I_0*Q_0*p_1*V*A(mu_prim)
+    mu_prim = mu + g_2*(p_2/p_1)*Q_0
+    g_2 = int(W**2) d(theta-theta_B) # theta vs omega!
+    W(delta) = distribution function characterizing the misalignment of the mosaic blocks, delta: angular deviation from mean
+    p_2 = (1 + pl.cos(2*theta)**4)/2.
+    """
+    lambd = 12.398 / (E/1000.)
+    I_Booth = Abs_fit(E, Exp, mu, phi, theta, m, n, d, dE, diff)
+    
+    # t_0 = thickness of perfect plate
+    # gamma_0 = direction cosine of incident beam relative to normal fo crystal plate
+    # -> Zachariasen1945, p. 169
+    # g = secondary extinction coefficient = .5 * eta * pl.sqrt(pl.pi)
+    # eta = standard deviation of W
+    
+    # # # alpha     = Ext_func(lambd, mu, r)
+    # # # beta_prim = Ext_func(lambd, mu, r, br_exp=4) * (lambd * t_0 / gamma_0)**2 / 3.
+    # # # beta_sec  = Ext_func(lambd, mu, r, br_exp=4, c_exp=3, sin_exp=2, r_exp=1) * g * lambd**3
+    # # # I = alpha*I_Booth - (beta_prim + beta_sec)*I_Booth**2
+    
+    # # # # # # # # y = mu*D
+    # # # # # # # # x = (N*lambd*F*l)**2
+    # # # # # # # # A = pl.exp(-y) * pl.sinh(y) / y # = 1 if already corrected for absorption
+    # # # # # # # # B = 1./y - pl.exp(-y) / pl.sinh(y)
+    # # # # # # # # if x > 1:
+        # # # # # # # # E_L = pl.exp(-y) * pl.sqrt(2./(pl.pi*x)) * (1 - 1./(8*x) - 3./(128*x**2) - 15./(1024*x**3))
+    # # # # # # # # else:
+        # # # # # # # # E_L = pl.exp(-y) * (1 - x/2. + x**2/4. - 5*x**3/48. + 7*x**4/192.)
+    # # # # # # # # E_B = A / pl.sqrt(1 + B*x)
+    # # # # # # # # E = E_L*pl.cos(2*theta)**2 + E_B*pl.sin(2*theta)**2
+    
+    # # # # # # # # I = E * I_Booth
+    
+    # to-fit: g
+    beta = Ext_func(lambd, mu)
+    I = I_Booth * (1 - g * beta * I_Booth)
+    
+    return I
+
+
 # Fitten
 fit_para, fit, fitE = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     
+    # p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
+          # Exp=ExpFunc[R], mu=Abs, dE=dE[key])
+    # myvars = ["m", "n", "theta", "phi"]
+    # fit_para[key] = et.fitls(E, pl.zeros(len(E)), Abs_fit, p0, 
+                              # myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
+    # fit[key] = Abs_fit(E, diff=False, **fit_para[key].popt)
+    # fitE[key] = E
+    
     p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          Exp=ExpFunc[R], mu=Abs, dE=dE[key])
-    myvars = ["m", "n", "theta", "phi"]
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Abs_fit, p0, 
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=300.)
+    myvars = ["m", "n", "theta", "phi", "g"]
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Ext_fit, p0, 
                               myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
-    fit[key] = Abs_fit(E, diff=False, **fit_para[key].popt)
+                              
+    fit[key] = Ext_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
 kf.make_fit_dat(fit_para, name='dafs', edge='L')
