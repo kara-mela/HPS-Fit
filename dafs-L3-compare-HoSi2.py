@@ -13,6 +13,20 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 from evaluationtools import absorption as ab
 from scipy import integrate as si
 
+def R_factor(exp, sim, weights=1):
+    """
+    reliability factor
+    Zanazzi1977
+    http://journals.iucr.org/q/issues/1965/03/00/a04554/a04554.pdf
+    
+    How to apply weights inline?
+    R**2 = (sum w_i(|F_i^o|-|F_i^c|)**2) / (sum w_i*|F_i^o|**2)
+    """
+    a = pl.multiply(weights, (abs(exp)-abs(sim))**2)
+    b = pl.multiply(weights, abs(exp)**2)
+    R = pl.sqrt(sum(a) / sum(b))
+    return R
+
 ps = 'TUBA' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
 
@@ -176,7 +190,7 @@ for key in Sim:
     # fitE[key] = E
     
     p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=300.)
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=150.)
     myvars = ["m", "n", "theta", "phi", "g"]
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Ext_fit, p0, 
                               myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
@@ -185,6 +199,23 @@ for key in Sim:
     fitE[key] = E
 
 kf.make_fit_dat(fit_para, name='dafs', edge='L')
+
+
+
+R_fact={}
+for key in fit.keys():
+    R = key.split('_')[-1]
+    # weights = et.gaussian(x=fitE[key], x0=edge, amp=edge, w=1, y0=0.)
+    w = 20
+    weights = (fitE[key]>(edge-w)) * (fitE[key]<(edge+w))
+    R_fact[key] = R_factor(exp=ExpFunc[R](fitE[key]), sim=fit[key], weights=weights)
+    print key, R_fact[key]
+    
+    #ordentliche Ausgabe!!!
+
+
+
+
         
 #----------------------------------------------------------
 # Plot fit results
