@@ -91,16 +91,17 @@ theta = { # at E = 8075eV
          "001" : 11.0648255327577,
          "301" : 43.1643687250282}
          
-def Abs_fit(E, mu, phi, theta, m=0., n=1., d=pl.inf, dE=0.):
+def Booth(E, mu, phi, theta, m=0., n=1., d=pl.inf, dE=0.):
     """
     following Booth2005, equation (1)
     eps_a = 1
     mu_a = 1
     mu_t = mu_f, due to elastical scattering
+    thick limit: d = infinity
     """
-    g = pl.sin(phi) / pl.sin(theta)
+    ratio = pl.sin(phi) / pl.sin(theta)
     mf = (m*(E-E[0]) + n) # linear machine function
-    I = mf / (mu + g*mu)
+    I = mf / (mu + ratio*mu)
     return I
 
 def Ext_fit(E, Exp, mu, phi, theta, g=100., m=0., n=1., d=pl.inf, dE=0., diff=True):
@@ -113,10 +114,17 @@ def Ext_fit(E, Exp, mu, phi, theta, g=100., m=0., n=1., d=pl.inf, dE=0., diff=Tr
     - http://journals.iucr.org/q/issues/1963/11/00/a04006/a04006.pdf
     """
     lambd = 12.398 / (E/1000.)
-    beta = lambd**3 * Abs_fit(E, mu, phi, theta, m, n, d, dE)
+    beta = lambd**2 + g * lambd**3
+    
+    # first Booth, than extinction
+    I = Isim * Booth(E, mu, phi, theta, m, n, d, dE)
+    I_corr = lambd**3* I * (1 - beta * I) - Exp(E - dE) * diff
+    
+    # first extinction, than Booth
+    # I = lambd**3 * Isim * (1 - beta * Isim)
+    # I_corr = I * Booth(E, mu, phi, theta, m, n, d, dE) - Exp(E - dE) * diff
 
-    I = Isim * (1 - g * beta * Isim) - Exp(E - dE) * diff
-    return I
+    return I_corr
 
 
 # Fitten
@@ -125,16 +133,8 @@ for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     
-    # p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          # Exp=ExpFunc[R], mu=Abs, dE=dE[key])
-    # myvars = ["m", "n", "theta", "phi"]
-    # fit_para[key] = et.fitls(E, pl.zeros(len(E)), Abs_fit, p0, 
-                              # myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
-    # fit[key] = Abs_fit(E, diff=False, **fit_para[key].popt)
-    # fitE[key] = E
-    
     p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=0.)
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=100.)
     myvars = ["m", "n", "theta", "phi", "g"]
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Ext_fit, p0, 
                               myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
