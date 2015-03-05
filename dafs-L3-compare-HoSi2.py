@@ -101,10 +101,10 @@ def Booth(E, mu, phi, theta, m=0., n=1., d=pl.inf, dE=0.):
     """
     ratio = pl.sin(phi) / pl.sin(theta)
     mf = (m*(E-E[0]) + n) # linear machine function
-    I = mf / (mu + ratio*mu)
-    return I
+    correction = mf / (mu + ratio*mu)
+    return correction
 
-def Ext_fit(E, Exp, mu, phi, theta, g=100., m=0., n=1., d=pl.inf, dE=0., diff=True):
+def Ext_fit(E, Exp, mu, phi, theta, g=.0, m=0., n=1., d=pl.inf, dE=0., diff=True):
     """
     including correction for extinction following 
     - Chandrasekhar1960 http://www.tandfonline.com/doi/pdf/10.1080/00018736000101219
@@ -113,29 +113,43 @@ def Ext_fit(E, Exp, mu, phi, theta, g=100., m=0., n=1., d=pl.inf, dE=0., diff=Tr
     - http://journals.iucr.org/q/issues/1961/11/00/a03314/a03314.pdf
     - http://journals.iucr.org/q/issues/1963/11/00/a04006/a04006.pdf
     """
-    lambd = 12.398 / (E/1000.)
-    beta = lambd**2 + g * lambd**3
+    # lambd = 12.398 / (E/1000.)
+    booth = Booth(E, mu, phi, theta, m, n, d, dE)
     
-    # first Booth, than extinction
-    I = Isim * Booth(E, mu, phi, theta, m, n, d, dE)
-    I_corr = lambd**3* I * (1 - beta * I) - Exp(E - dE) * diff
+    # # beta = lambd**2 + g * lambd**3
     
-    # first extinction, than Booth
-    # I = lambd**3 * Isim * (1 - beta * Isim)
-    # I_corr = I * Booth(E, mu, phi, theta, m, n, d, dE) - Exp(E - dE) * diff
-
+    # # first Booth, than extinction
+    # I = Isim * Booth(E, mu, phi, theta, m, n, d, dE)
+    # I_corr = lambd**3* I * (1 - beta * I) - Exp(E - dE) * diff
+    
+    # alpha = lambd**3 * booth
+    # beta = lambd**5 * booth + g * lambd**6 * booth#?
+    # I_corr = alpha * I - beta * I**2 - Exp(E - dE) * diff
+    
+    # D C Meyer 2003 (m = g = secondary extinction coefficient)
+    I_corr = booth * Isim * (1 - booth * g * Isim) - Exp(E - dE) * diff
+    
     return I_corr
 
 
 # Fitten
+# g0 = {"sat" : 5., 
+      # "110" : 50., 
+      # "001" : 50.,
+      # "301" : 1.}
+g0 = {"sat" : 0.5, 
+      "110" : 0.5, 
+      "001" : 0.5,
+      "301" : 0.01}
 fit_para, fit, fitE = {}, {}, {}
 for key in Sim:
     R = key.split("_")[-1]
     E, Isim, Abs = Sim[key]
     
     p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=100.)
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=g0[R])
     myvars = ["m", "n", "theta", "phi", "g"]
+    # myvars = ["m", "n", "theta", "phi"]
     fit_para[key] = et.fitls(E, pl.zeros(len(E)), Ext_fit, p0, 
                               myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
                               
