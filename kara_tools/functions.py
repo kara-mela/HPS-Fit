@@ -8,6 +8,34 @@ import collections
 
 Simulation = collections.namedtuple("Sim", ["E", "Dafs", "Abs"])
 
+def Booth(E, Isim, mu, phi, theta, m=0., n=1., d=np.inf, dE=0.):
+    """
+    geometrical correction
+    following Booth2005, equation (1)
+    eps_a = 1
+    mu_a = 1
+    mu_t = mu_f, due to elastical scattering
+    thick limit: d = infinity
+    """
+    ratio = np.sin(phi) / np.sin(theta)
+    mf = (m*(E-E[0]) + n) # linear machine function
+    correction = mf / (mu + ratio*mu)
+    return correction
+
+def Ext_fit(E, Exp, Isim, mu, phi, theta, g=.0, m=0., n=1., d=np.inf, dE=0., diff=True):
+    """
+    including correction for extinction 
+    following Meyer2003, equation (5) [corrected sign error]
+    thick limit: t = infinity
+    sin(theta) = konst
+    absorption correction using Booth ansatz
+    m := g
+    """
+    booth = Booth(E, Isim, mu, phi, theta, m, n, d, dE)
+    I_corr = booth * Isim * (1 - booth * g * Isim) - Exp(E - dE) * diff
+    
+    return I_corr
+    
 def get_dE(keys):
     dE_xafs = et.loaddat('fit-para-xafs.dat', todict=True, comment='#')
     dE = {}
@@ -187,35 +215,36 @@ def get_data(edge, DIR=os.curdir, names=None):
         energy[key] = np.array(energy[key]) + edge
     
     return s, p, d, f, energy
-    
+   
 def make_fit_dat(fit_para, name='xafs', edge=None):
     """
     creating fit-para.dat
     file containing fit parameter err (and dE from xafs)
     """
-    header, dE_line, err_line  = [], [], []
-    m, n, omega = [], [], []
-    for key in fit_para:
-        header.append(key)
-        if name == 'xafs':
-            dE_line.append(fit_para[key].popt["dE"])
-        else:
-            dE_line.append(0.0)
-        # if edge == 'L':
-            # m.append(fit_para[key].popt["m"])
-            # n.append(fit_para[key].popt["n"])
-            # omega.append(fit_para[key].popt["omega"])
-        # else:
-            # m.append(0.0)
-            # n.append(0.0)
-            # omega.append(0.0)
-        err_line.append(fit_para[key].err) #(residuals(fitted_param)**2).sum()/len(x_m) -> mittlere Fehlerquadrate
+    R = []
+    for key in fit_para.keys():
+        if key.split('_')[-1] not in R:
+            R.append(key.split('_')[-1])
     
-    # content = [err_line, dE_line, m, n, omega]
-    content = [err_line, dE_line]
-        
-    data = dict(zip(header, np.array(content).T))
-    et.savedat('fit-para-' + name + '.dat', data, xcol=header[0])
+    header = []
+    keys = fit_para.copy()
+    for Refl, key in product(R,keys):
+        if Refl in key:
+            header.append(key)
+            keys.pop(key)
+    
+    params = []
+    for key in header:
+        dummy = []
+        for param in fit_para[key].popt.keys():
+            dummy.append(fit_para[key].popt[param])
+        params.append(dummy)
+    params = np.array(params)
+    print len(params), len(params[0])
+    # data = dict(zip(header, np.array(params).T))
+    # print header[0], type(header[0])
+    # et.savedat('fit-para-' + name + '.dat', data, xcol=header[0])
+    et.savedat('test.dat', params, header)
     
 def get_sim(R, miller, edge, symbol="L23"):
     """

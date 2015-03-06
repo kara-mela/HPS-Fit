@@ -11,7 +11,7 @@ from kara_tools import TUBAF
 from kara_tools import functions as kf
 from matplotlib.ticker import FixedLocator, MultipleLocator
 from evaluationtools import absorption as ab
-from scipy import integrate as si
+# import pyFDMNES as pF
 
 def R_factor(exp, sim, weights=1):
     """
@@ -34,9 +34,7 @@ density = 7.6062541648443736
 edge = 8071 + 6.3
 cut = 42
 E_lim = slice(0, 350) # only L3 edge
-fact=2 # shift of graphs on y axis
-
-# myvars = ["n", "m"] # fit parameters
+fact = 1.5 # shift of graphs on y axis
 
 Reflections = {"sat" : "-215", 
                "110" : "220", 
@@ -46,11 +44,10 @@ Reflections = {"sat" : "-215",
 ExpFunc = {} # Experimental Data as Functions
 Sim = {} # Simulated Data
 
-# k = dict(zip(Reflections.keys(), fact*pl.arange(len(Reflections))))
-k = {"sat" : 0., 
-     "110" : 1.5, 
-     "001" : 3.,
-     "301" : 4.5}
+k = {"sat" : 0*fact, 
+     "110" : 1*fact, 
+     "001" : 2*fact,
+     "301" : 3*fact}
 
 # load data
 print("loading data...")
@@ -90,53 +87,8 @@ theta = { # at E = 8075eV
          "110" : 22.2779615832629, 
          "001" : 11.0648255327577,
          "301" : 43.1643687250282}
-         
-def Booth(E, mu, phi, theta, m=0., n=1., d=pl.inf, dE=0.):
-    """
-    following Booth2005, equation (1)
-    eps_a = 1
-    mu_a = 1
-    mu_t = mu_f, due to elastical scattering
-    thick limit: d = infinity
-    """
-    ratio = pl.sin(phi) / pl.sin(theta)
-    mf = (m*(E-E[0]) + n) # linear machine function
-    correction = mf / (mu + ratio*mu)
-    return correction
-
-def Ext_fit(E, Exp, mu, phi, theta, g=.0, m=0., n=1., d=pl.inf, dE=0., diff=True):
-    """
-    including correction for extinction following 
-    - Chandrasekhar1960 http://www.tandfonline.com/doi/pdf/10.1080/00018736000101219
-    - doi: 10.1007/BF01596735
-    see also 
-    - http://journals.iucr.org/q/issues/1961/11/00/a03314/a03314.pdf
-    - http://journals.iucr.org/q/issues/1963/11/00/a04006/a04006.pdf
-    """
-    # lambd = 12.398 / (E/1000.)
-    booth = Booth(E, mu, phi, theta, m, n, d, dE)
-    
-    # # beta = lambd**2 + g * lambd**3
-    
-    # # first Booth, than extinction
-    # I = Isim * Booth(E, mu, phi, theta, m, n, d, dE)
-    # I_corr = lambd**3* I * (1 - beta * I) - Exp(E - dE) * diff
-    
-    # alpha = lambd**3 * booth
-    # beta = lambd**5 * booth + g * lambd**6 * booth#?
-    # I_corr = alpha * I - beta * I**2 - Exp(E - dE) * diff
-    
-    # D C Meyer 2003 (m = g = secondary extinction coefficient)
-    I_corr = booth * Isim * (1 - booth * g * Isim) - Exp(E - dE) * diff
-    
-    return I_corr
-
 
 # Fitten
-# g0 = {"sat" : 5., 
-      # "110" : 50., 
-      # "001" : 50.,
-      # "301" : 1.}
 g0 = {"sat" : 0.5, 
       "110" : 0.5, 
       "001" : 0.5,
@@ -147,13 +99,13 @@ for key in Sim:
     E, Isim, Abs = Sim[key]
     
     p0 = dict(m=0., n=1., theta=theta[R]/180.*pl.pi, phi=theta[R]/180.*pl.pi, d=pl.inf, 
-          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=g0[R])
+          Exp=ExpFunc[R], mu=Abs, dE=dE[key], g=g0[R], Isim=Isim)
     myvars = ["m", "n", "theta", "phi", "g"]
     # myvars = ["m", "n", "theta", "phi"]
-    fit_para[key] = et.fitls(E, pl.zeros(len(E)), Ext_fit, p0, 
+    fit_para[key] = et.fitls(E, pl.zeros(len(E)), kf.Ext_fit, p0, 
                               myvars, fitalg='simplex', maxfun=1e6, maxiter=1e6)
                               
-    fit[key] = Ext_fit(E, diff=False, **fit_para[key].popt)
+    fit[key] = kf.Ext_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
 kf.make_fit_dat(fit_para, name='dafs', edge='L')
