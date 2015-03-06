@@ -232,19 +232,20 @@ def make_fit_dat(fit_para, name='xafs', edge=None):
         if Refl in key:
             header.append(key)
             keys.pop(key)
+            
+    param_names = fit_para.values()[0].popt.keys()
+    param_names.remove('Isim')
+    param_names.remove('Exp')
+    pn = sorted(param_names)
+    params = collections.OrderedDict()
     
-    params = []
     for key in header:
-        dummy = []
-        for param in fit_para[key].popt.keys():
-            dummy.append(fit_para[key].popt[param])
-        params.append(dummy)
-    params = np.array(params)
-    print len(params), len(params[0])
-    # data = dict(zip(header, np.array(params).T))
-    # print header[0], type(header[0])
-    # et.savedat('fit-para-' + name + '.dat', data, xcol=header[0])
-    et.savedat('test.dat', params, header)
+        params[key] = np.array([fit_para[key].popt[pname] for pname in param_names])
+    print type(params)
+    
+    
+    et.savedat('fit-para-' + name + '.dat', params)
+    
     
 def get_sim(R, miller, edge, symbol="L23"):
     """
