@@ -8,6 +8,20 @@ import collections
 
 Simulation = collections.namedtuple("Sim", ["E", "Dafs", "Abs"])
 
+def R_factor(exp, sim, weights=1):
+    """
+    reliability factor
+    Zanazzi1977
+    http://journals.iucr.org/q/issues/1965/03/00/a04554/a04554.pdf
+    
+    How to apply weights inline?
+    R**2 = (sum w_i(|F_i^o|-|F_i^c|)**2) / (sum w_i*|F_i^o|**2)
+    """
+    a = np.multiply(weights, (abs(exp)-abs(sim))**2)
+    b = np.multiply(weights, abs(exp)**2)
+    R = np.sqrt(sum(a) / sum(b))
+    return R
+
 def Booth(E, Isim, mu, phi, theta, m=0., n=1., d=np.inf, dE=0.):
     """
     geometrical correction
@@ -216,10 +230,12 @@ def get_data(edge, DIR=os.curdir, names=None):
     
     return s, p, d, f, energy
    
-def make_fit_dat(fit_para, name='xafs', edge=None):
+def make_fit_dat(fit_para, name='xafs', edge=None, R_fact=None):
     """
     creating fit-para.dat
     file containing fit parameter err (and dE from xafs)
+    
+    filtering of parameters via myvars?!
     """
     R = []
     for key in fit_para.keys():
@@ -234,18 +250,29 @@ def make_fit_dat(fit_para, name='xafs', edge=None):
             keys.pop(key)
             
     param_names = fit_para.values()[0].popt.keys()
-    param_names.remove('Isim')
-    param_names.remove('Exp')
-    pn = sorted(param_names)
+    try:
+        param_names.remove('Isim')
+    except:
+        pass
+    try:
+        param_names.remove('Exp')
+    except:
+        pass
+    try:
+        param_names.remove('mu')
+    except:
+        pass
+    param_names = sorted(param_names)
+    print param_names, 'error (R-factor)' #info about the order of the parameters (not visible in *.dat)
     params = collections.OrderedDict()
     
     for key in header:
         params[key] = np.array([fit_para[key].popt[pname] for pname in param_names])
-    print type(params)
-    
+        params[key] = np.hstack((params[key], fit_para[key].err))
+        if R_fact != None:
+            params[key] = np.hstack((params[key], R_fact[key]))
     
     et.savedat('fit-para-' + name + '.dat', params)
-    
     
 def get_sim(R, miller, edge, symbol="L23"):
     """

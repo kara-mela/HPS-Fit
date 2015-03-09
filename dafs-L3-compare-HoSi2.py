@@ -13,20 +13,6 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 from evaluationtools import absorption as ab
 # import pyFDMNES as pF
 
-def R_factor(exp, sim, weights=1):
-    """
-    reliability factor
-    Zanazzi1977
-    http://journals.iucr.org/q/issues/1965/03/00/a04554/a04554.pdf
-    
-    How to apply weights inline?
-    R**2 = (sum w_i(|F_i^o|-|F_i^c|)**2) / (sum w_i*|F_i^o|**2)
-    """
-    a = pl.multiply(weights, (abs(exp)-abs(sim))**2)
-    b = pl.multiply(weights, abs(exp)**2)
-    R = pl.sqrt(sum(a) / sum(b))
-    return R
-
 ps = 'TUBA' # plotstyle
 pl.matplotlib.rc('font', **{'size':14})
 
@@ -41,13 +27,13 @@ Reflections = {"sat" : "-215",
                "001" : "008",
                "301" : "608"}
 
-ExpFunc = {} # Experimental Data as Functions
-Sim = {} # Simulated Data
-
 k = {"sat" : 0*fact, 
      "110" : 1*fact, 
      "001" : 2*fact,
      "301" : 3*fact}
+
+ExpFunc = {} # Experimental Data as Functions
+Sim = {} # Simulated Data
 
 # load data
 print("loading data...")
@@ -82,13 +68,13 @@ for key in Sim.keys():
         Sim[key][1] /= Sim[key][1].mean() # normalize
         Sim[key][2] /= Sim[key][2].mean()
 
+# Fitten
 theta = { # at E = 8075eV
          "sat" : 12.9625957428644,
          "110" : 22.2779615832629, 
          "001" : 11.0648255327577,
          "301" : 43.1643687250282}
 
-# Fitten
 g0 = {"sat" : 0.5, 
       "110" : 0.5, 
       "001" : 0.5,
@@ -108,22 +94,15 @@ for key in Sim:
     fit[key] = kf.Ext_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
-kf.make_fit_dat(fit_para, name='dafs', edge='L')
-
-
-
-R_fact={}
+R_fact = {}
 for key in fit.keys():
     R = key.split('_')[-1]
     # weights = et.gaussian(x=fitE[key], x0=edge, amp=edge, w=1, y0=0.)
     w = 20
     weights = (fitE[key]>(edge-w)) * (fitE[key]<(edge+w))
-    R_fact[key] = R_factor(exp=ExpFunc[R](fitE[key]), sim=fit[key], weights=weights)
-    print key, R_fact[key]
-    
-    #ordentliche Ausgabe!!!
+    R_fact[key] = kf.R_factor(exp=ExpFunc[R](fitE[key]), sim=fit[key], weights=weights)
 
-
+kf.make_fit_dat(fit_para, name='dafs', edge='L', R_fact=R_fact)
 
 
         

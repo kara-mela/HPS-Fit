@@ -82,7 +82,17 @@ for key in Sim:
     fit[key] = kf.Ext_fit(E, diff=False, **fit_para[key].popt)
     fitE[key] = E
 
-kf.make_fit_dat(fit_para, name='dafs', edge='K')
+R_fact = {}
+for key in fit.keys():
+    R = key.split('_')[-1]
+    # weights = et.gaussian(x=fitE[key], x0=edge, amp=edge, w=1, y0=0.)
+    w = 20
+    weights = (fitE[key]>(edge-w)) * (fitE[key]<(edge+w))
+    R_fact[key] = kf.R_factor(exp=ExpFunc[R](fitE[key]), sim=fit[key], weights=weights)
+
+kf.make_fit_dat(fit_para, name='dafs', edge='K', R_fact=R_fact)
+
+
 
 #----------------------------------------------------------
 # Plot fit results

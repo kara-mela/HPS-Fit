@@ -114,7 +114,17 @@ for key in xafs:
     fit[key] = f.Icorr(energy[key], diff=False, **fit_para[key].popt)
     fitE[key] = energy[key]
 
-f.make_fit_dat(fit_para)
+# f.make_fit_dat(fit_para)
+
+R_fact = {}
+for key in fit.keys():
+    R = key.split('_')[-1]
+    # weights = et.gaussian(x=fitE[key], x0=edge, amp=edge, w=1, y0=0.)
+    w = 20
+    weights = (fitE[key]>(edge-w)) * (fitE[key]<(edge+w))
+    R_fact[key] = f.R_factor(exp=Exp(fitE[key]), sim=fit[key], weights=weights)
+
+f.make_fit_dat(fit_para, R_fact=R_fact)
 
 # norming
 for key in fit: 
